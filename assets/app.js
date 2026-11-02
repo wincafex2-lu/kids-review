@@ -273,9 +273,9 @@ function fixMarkup(q) {
   let step2 = '';
   if (run.fixFound) {
     step2 = `<p class="glyph-success" role="status">找對了！「${esc(q.wrong)}」是錯字。</p><p class="correction-step"><span>2</span>選出正確的字</p>
-      <div class="math-options" role="group" aria-label="選出正確的字">${q.order.map((oi, k) => {
+      <div class="math-options fix-options" role="group" aria-label="選出正確的字">${q.order.map((oi, k) => {
         const v = q.options[oi], isAns = v === q.correct, isSel = run.selected === v;
-        return `<button class="math-option ${run.submitted && isAns ? 'correct-option' : ''} ${run.submitted && isSel && !isAns ? 'wrong-option' : ''}" data-fixopt="${oi}" ${run.submitted ? 'disabled' : ''}><span class="option-letter">${String.fromCharCode(65 + k)}</span><span style="font-family:'Noto Serif TC','Songti TC',serif;font-size:1.3em">${esc(v)}</span>${run.submitted && isAns ? '<span class="answer-marker">正解</span>' : ''}</button>`;
+        return `<button class="math-option ${run.submitted && isAns ? 'correct-option' : ''} ${run.submitted && isSel && !isAns ? 'wrong-option' : ''}" data-fixopt="${oi}" ${run.submitted ? 'disabled' : ''}><span class="option-letter">${String.fromCharCode(65 + k)}</span><span class="fix-char">${esc(v)}</span>${run.submitted && isAns ? '<span class="answer-marker">正解</span>' : ''}</button>`;
       }).join('')}</div>`;
   }
   return `<h3 id="qprompt" tabindex="-1">下面這句話有一個錯字，先點出錯字。</h3>
@@ -326,7 +326,7 @@ function pickGlyph(i) {
   const q = run.questions[run.pos];
   if (run.submitted || run.fixFound) return;
   const ch = [...q.sentence][i];
-  if (ch === q.wrong) { run.fixFound = true; renderPractice(); return; }
+  if (ch === q.wrong) { run.fixFound = true; renderPractice().then(() => $('.fix-options')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); return; }
   run.fixMiss = i;
   record(q, false, `點了「${ch}」`, `「${q.wrong}」改成「${q.correct}」`);
   renderPractice().then(() => $('#feedback')?.focus());
