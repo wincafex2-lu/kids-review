@@ -253,10 +253,14 @@ function questionMarkup() {
   if (q.type === 'fix') main = fixMarkup(q);
   else {
     const opts = q.type === 'tf' ? [[true, '○', '對'], [false, '×', '錯']] : q.order.map((oi, k) => [oi, String.fromCharCode(65 + k), q.options[oi]]);
+    // 選項都很短（單字、注音）時並排成一列，減少高度
+    const maxLen = Math.max(...opts.map(o => [...String(o[2])].length));
+    const short = q.type !== 'tf' && maxLen <= 4, medium = q.type !== 'tf' && !short && maxLen <= 10;
+    const oneChar = short && opts.every(o => [...String(o[2])].length === 1);
     main = `<h3 id="qprompt" tabindex="-1">${esc(q.q)}</h3>
-      <div class="math-options ${q.type === 'tf' ? 'truefalse-options' : ''}" role="group" aria-label="選擇答案">${opts.map(([v, letter, text]) => {
+      <div class="math-options ${q.type === 'tf' ? 'truefalse-options' : ''} ${short ? 'grid-options' + (oneChar ? '' : ' grid-words') : medium ? 'two-col-options' : ''}" role="group" aria-label="選擇答案">${opts.map(([v, letter, text]) => {
         const isAns = v === q.answer, isSel = run.selected === v;
-        return `<button class="math-option ${isSel ? 'selected' : ''} ${run.submitted && isAns ? 'correct-option' : ''} ${run.submitted && isSel && !isAns ? 'wrong-option' : ''}" data-option="${String(v)}" aria-pressed="${isSel}" ${run.submitted ? 'disabled' : ''}><span class="option-letter">${letter}</span><span>${esc(text)}</span>${run.submitted && isAns ? '<span class="answer-marker">正解</span>' : ''}</button>`;
+        return `<button class="math-option ${isSel ? 'selected' : ''} ${run.submitted && isAns ? 'correct-option' : ''} ${run.submitted && isSel && !isAns ? 'wrong-option' : ''}" data-option="${String(v)}" aria-pressed="${isSel}" ${run.submitted ? 'disabled' : ''}><span class="option-letter">${letter}</span><span class="${short ? (oneChar ? 'fix-char' : 'short-text') : ''}">${esc(text)}</span>${run.submitted && isAns ? '<span class="answer-marker">正解</span>' : ''}</button>`;
       }).join('')}</div>
       ${run.submitted ? '' : `<button class="primary-button math-submit" data-act="submit" ${run.selected === null ? 'disabled' : ''}>確認答案</button>`}`;
   }
