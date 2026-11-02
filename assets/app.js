@@ -119,11 +119,23 @@ function blockBody(b) {
     default: return `<p>${esc(b.body ?? '')}</p>`;
   }
 }
+// 例詞與解釋：意思欄若寫成「詞：解釋。詞：解釋。」就每個例詞配一行解釋；否則例詞標籤＋整段意思
+function exampleRows(words, meaning) {
+  const m = String(meaning ?? '');
+  const pos = words.map(w => m.indexOf(w + '：'));
+  if (words.length && pos.every((p, i) => p >= 0 && (i === 0 || p > pos[i - 1]))) {
+    return `<div class="example-rows">${words.map((w, i) => {
+      const text = m.slice(pos[i] + w.length + 1, i + 1 < words.length ? pos[i + 1] : undefined).trim();
+      return `<div class="example-row"><span class="example-chip">${esc(w)}</span><span class="meaning">${esc(text)}</span></div>`;
+    }).join('')}</div>`;
+  }
+  return `<div class="example-words">${words.map(w => `<span>${esc(w)}</span>`).join('')}</div>${m ? `<p class="meaning">${esc(m)}</p>` : ''}`;
+}
 function tableBody(b) {
   const cols = b.columns || [], rows = b.rows || [];
   // 生字表：字／注音／例詞／意思 → 生字卡
   if (cols.length >= 3 && /^字$/.test(cols[0]) && /注音/.test(cols[1])) {
-    return `<div class="vocab-grid">${rows.map(r => `<div class="vocab-card"><div class="char-line"><span class="character">${esc(r[0])}</span><span class="zhuyin">${esc(r[1])}</span></div><div class="example-words">${splitList(r[2]).map(w => `<span>${esc(w)}</span>`).join('')}</div>${r[3] ? `<p class="meaning">${esc(r[3])}</p>` : ''}</div>`).join('')}</div>`;
+    return `<div class="vocab-grid">${rows.map(r => `<div class="vocab-card"><div class="char-line"><span class="character">${esc(r[0])}</span><span class="zhuyin">${esc(r[1])}</span></div>${exampleRows(splitList(r[2]), r[3])}</div>`).join('')}</div>`;
   }
   // 兩到三欄的辨字表 → 對照卡（第一欄是標題，最後一欄是提示）
   if (cols.length === 2 || cols.length === 3) {
