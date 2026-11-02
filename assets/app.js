@@ -52,7 +52,9 @@ const scopeLabel = () => state.scope ? state.scope + '範圍' : '全部範圍';
 
 /* ---------- 路由：#/年級/科目/單元或混合/練習 ---------- */
 function go(unit = state.unit, mode = state.mode, grade = state.grade, subject = state.subject) {
-  location.hash = '#/' + [grade, subject, unit || '', mode === 'practice' ? '練習' : ''].filter(Boolean).map(encodeURIComponent).join('/');
+  const h = '#/' + [grade, subject, unit || '', mode === 'practice' ? '練習' : ''].filter(Boolean).map(encodeURIComponent).join('/');
+  // 網址沒變時瀏覽器不會觸發 hashchange（例如切換範圍時），要自己重新整理畫面
+  if (location.hash === h) route(); else location.hash = h;
 }
 function route() {
   const p = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
@@ -371,7 +373,7 @@ document.addEventListener('click', e => {
   if (d.jump) { e.preventDefault(); document.getElementById(d.jump)?.scrollIntoView({ behavior: 'smooth' }); return; }
   if (d.grade) { const g = INDEX.grades.find(x => x.name === d.grade); const s = g.subjects.find(x => x.name === state.subject) || g.subjects[0]; return go(null, state.mode, g.name, s.name); }
   if (d.subject) return go(null, state.mode, state.grade, d.subject);
-  if (d.scope !== undefined) { state.scope = d.scope; store.set('kr-scope', d.scope); run = null; const keep = state.unit === ALL || scopedUnits().some(u => baseName(u.file) === state.unit); return keep ? render() : go(state.mode === 'practice' ? ALL : null); }
+  if (d.scope !== undefined) { state.scope = d.scope; store.set('kr-scope', d.scope); run = null; const keep = state.unit === ALL || scopedUnits().some(u => baseName(u.file) === state.unit); if (keep) return render(); const first = scopedUnits()[0]; return go(state.mode === 'practice' ? ALL : (first ? baseName(first.file) : null)); }
   if (d.mode) { return go(d.mode === 'practice' ? (unitMeta()?.questions ? state.unit : ALL) : (state.unit === ALL ? null : state.unit), d.mode); }
   if (d.unit !== undefined) { if (!d.unit) return; go(d.unit); $('#reader').scrollIntoView({ block: 'start' }); return; }
   if (d.practiceUnit) { run = null; return go(d.practiceUnit, 'practice'); }
