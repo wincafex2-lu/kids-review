@@ -113,7 +113,7 @@ function blockBody(b) {
   switch (b.kind) {
     case 'text': return `<div class="summary"><p>${esc(b.body ?? b.text ?? '')}</p></div>`;
     case 'points': return `<ul class="focus-list">${(b.items || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
-    case 'words': return `<div class="phrase-grid">${(b.items || []).map(w => `<div class="vocab-card phrase-card"><h3>${esc(w.word)}</h3>${w.zhuyin ? `<p class="zhuyin zy-split">${zySplit(w.zhuyin)}</p>` : ''}${w.meaning ? `<p class="phrase-meaning">${esc(w.meaning)}</p>` : ''}${w.example ? `<p class="example"><span>例句</span>${esc(w.example)}</p>` : ''}</div>`).join('')}</div>`;
+    case 'words': return `<div class="phrase-grid">${(b.items || []).map(w => `<div class="vocab-card phrase-card"><div class="char-line word-line"><h3>${esc(w.word)}</h3>${w.zhuyin ? `<span class="zhuyin zy-split">${zySplit(w.zhuyin)}</span>` : ''}</div>${w.meaning ? `<p class="phrase-meaning">${esc(w.meaning)}</p>` : ''}${w.example ? `<p class="example"><span>例句</span>${esc(w.example)}</p>` : ''}</div>`).join('')}</div>`;
     case 'qa': return (b.items || []).map((x, i) => `<div class="quiz"><p class="quiz-question"><span>${i + 1}.</span>${esc(x.q)}</p>${x.hint ? `<p class="choice-label">${esc(x.hint)}</p>` : ''}<details><summary>看答案</summary><div class="answer"><p>${esc(x.a)}</p>${x.why ? `<p class="explanation">${esc(x.why)}</p>` : ''}</div></details></div>`).join('');
     case 'table': return tableBody(b);
     default: return `<p>${esc(b.body ?? '')}</p>`;
