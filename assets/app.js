@@ -346,21 +346,6 @@ function nextQ() {
   $('#reader').scrollIntoView({ block: 'start' });
 }
 
-/* ---------- 搜尋單元 ---------- */
-function renderSearch(qs) {
-  const box = $('#searchResults');
-  $('#clearSearch').hidden = !qs;
-  if (!qs) { box.hidden = true; box.innerHTML = ''; return; }
-  const words = qs.toLowerCase().split(/\s+/).filter(Boolean);
-  const hits = [];
-  for (const g of INDEX.grades) for (const s of g.subjects) for (const u of s.units) {
-    const hay = `${g.name} ${s.name} ${u.title} ${u.subtitle} ${u.term} ${Object.keys(u.cats).join(' ')}`.toLowerCase();
-    if (words.every(w => hay.includes(w))) hits.push([g, s, u]);
-  }
-  box.hidden = false;
-  box.innerHTML = `<h2>找到 ${hits.length} 個單元</h2>${hits.slice(0, 40).map(([g, s, u]) => `<button class="result" data-hit="${esc([g.name, s.name, baseName(u.file)].join('|'))}">${esc(u.title)}<small>${esc(g.name)} · ${esc(s.name)}${u.term ? ' · ' + esc(u.term) : ''}${u.subtitle ? ' · ' + esc(u.subtitle) : ''}</small></button>`).join('') || '<p class="search-empty">沒有符合的單元，換個關鍵字試試看。</p>'}`;
-}
-
 /* ---------- 畫面 ---------- */
 function render() {
   renderSidebar();
@@ -377,8 +362,6 @@ document.addEventListener('click', e => {
   if (d.mode) { return go(d.mode === 'practice' ? (unitMeta()?.questions ? state.unit : ALL) : (state.unit === ALL ? null : state.unit), d.mode); }
   if (d.unit !== undefined) { if (!d.unit) return; go(d.unit); $('#reader').scrollIntoView({ block: 'start' }); return; }
   if (d.practiceUnit) { run = null; return go(d.practiceUnit, 'practice'); }
-  if (d.hit) { const [g, s, u] = d.hit.split('|'); $('#search').value = ''; renderSearch(''); return go(u, 'review', g, s); }
-  if (b.id === 'clearSearch') { $('#search').value = ''; renderSearch(''); return; }
   if (b.id === 'fontToggle') { const on = !document.body.classList.contains('large-type'); document.body.classList.toggle('large-type', on); b.setAttribute('aria-pressed', String(on)); store.set('kr-large', on); return; }
   if (b.id === 'clearWrong') { if (confirm('確定要清空全部錯題嗎？')) { wrongBook.clear(); saveWrong(); renderPractice(); } return; }
   if (!run) return;
@@ -400,7 +383,6 @@ document.addEventListener('keydown', e => {
   else if (q.type === 'mc' && /^[1-6]$/.test(e.key) && q.order[Number(e.key) - 1] !== undefined) { run.selected = q.order[Number(e.key) - 1]; renderPractice(); }
   else if (q.type === 'fix' && run.fixFound && /^[1-6]$/.test(e.key) && q.order[Number(e.key) - 1] !== undefined) pickFix(q.order[Number(e.key) - 1]);
 });
-$('#search').addEventListener('input', e => renderSearch(e.target.value.trim()));
 // 側欄固定在畫面上時，在側欄滑動或滾輪不要帶動右邊內容（iOS Safari 不支援用 CSS 擋），
 // 只有單元清單本身可以捲，捲到頭或尾也不會再傳到整頁。
 (() => {
