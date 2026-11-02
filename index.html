@@ -2,22 +2,46 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>小朋友複習小書</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#174e49">
+<title>學習複習小書</title>
 <meta name="description" content="依年級、科目、單元整理的複習重點與練習題。">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="assets/style.css">
+<script src="assets/app.js" defer></script>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <a href="#/" class="brand" id="brand">小朋友複習小書</a>
-    <div class="row"><span class="sub" id="bankInfo"></span><button class="ghost small" id="fontSize" aria-label="調整字級">字級 A＋</button></div>
-  </header>
-  <main id="app"><div class="loading">正在打開複習小書…</div></main>
-  <p class="foot">此頁為複習整理與原創練習題，不取代課本與老師的說明。錯題只存在這台裝置的瀏覽器裡。</p>
-</div>
-<script src="assets/app.js"></script>
+<a class="skip" href="#reader">跳到課程複習</a>
+<header class="masthead">
+  <div class="brand"><span class="book-mark" aria-hidden="true">文</span><div><span class="eyebrow">每天一點，慢慢讀懂</span><p id="brandTitle">讀一課<span>學習複習小書</span></p></div></div>
+  <div class="header-actions"><button id="fontToggle" class="text-button" aria-pressed="false" title="切換較大字體">字體 A＋</button></div>
+</header>
+<main class="page">
+  <section class="intro">
+    <div><span class="eyebrow" id="introEyebrow">線上閱讀版</span><h1>讀懂重點，<br class="mobile-break">練習把知識用出來。</h1><p>選一科開始。先讀重點、理解語詞，再做練習題；答錯的題目會自動收進錯題本。</p></div>
+    <div class="intro-decoration" aria-hidden="true"><span>讀</span><span>想</span><span>練</span></div>
+  </section>
+  <div class="workspace">
+    <aside class="sidebar">
+      <div class="subject-switch" id="subjectSwitch" role="group" aria-label="選擇科目"></div>
+      <div class="grade-switch" id="gradeSwitch" role="group" aria-label="選擇年級"></div>
+      <div id="scopeSwitch" class="scope-switch" role="group" aria-label="複習範圍"></div>
+      <div id="studyMode" class="study-mode" role="group" aria-label="閱讀與題庫">
+        <button data-mode="review" aria-pressed="true">重點複習</button>
+        <button data-mode="practice" aria-pressed="false">題庫練習</button>
+      </div>
+      <p id="scopeCaption" class="scope-caption"></p>
+      <label class="search-label" for="search">找單元</label>
+      <div class="search-box"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="例如：植物、乘法、第5課" autocomplete="off"><button id="clearSearch" aria-label="清除搜尋" hidden>×</button></div>
+      <p class="nav-label" id="navLabel">本冊內容</p>
+      <nav id="lessons" aria-label="選擇單元"></nav>
+      <p class="side-note">不急著背答案。<br>說得出差別，就更記得住。</p>
+    </aside>
+    <div class="reading-area">
+      <div id="searchResults" hidden></div>
+      <article id="reader" tabindex="-1" aria-live="polite"><p class="loading">正在打開複習小書…</p></article>
+    </div>
+  </div>
+  <footer>讀一課 · 每次讀懂一點，就是進步。<span>此頁為複習整理與原創練習題，不取代課本與老師的說明。錯題只存在這台裝置的瀏覽器裡。</span></footer>
+</main>
 </body>
 </html>
