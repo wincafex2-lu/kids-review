@@ -401,6 +401,23 @@ document.addEventListener('keydown', e => {
   else if (q.type === 'fix' && run.fixFound && /^[1-6]$/.test(e.key) && q.order[Number(e.key) - 1] !== undefined) pickFix(q.order[Number(e.key) - 1]);
 });
 $('#search').addEventListener('input', e => renderSearch(e.target.value.trim()));
+// 平板：側欄固定在畫面上時，在側欄滑動不要帶動右邊內容（iOS Safari 不支援用 CSS 擋），
+// 只有單元清單本身可以捲，捲到頭或尾也不會再傳到整頁。
+(() => {
+  const side = $('.sidebar'); let y0 = 0;
+  side.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
+  side.addEventListener('touchmove', e => {
+    if (e.touches.length > 1 || getComputedStyle(side).position !== 'sticky') return;
+    const list = e.target.closest('#lessons');
+    if (list && list.scrollHeight > list.clientHeight + 1) {
+      const dy = e.touches[0].clientY - y0;
+      const atTop = list.scrollTop <= 0, atEnd = list.scrollTop + list.clientHeight >= list.scrollHeight - 1;
+      if ((dy > 0 && atTop) || (dy < 0 && atEnd)) e.preventDefault();
+      return;
+    }
+    e.preventDefault();
+  }, { passive: false });
+})();
 
 /* ---------- 啟動 ---------- */
 (async () => {
