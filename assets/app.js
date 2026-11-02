@@ -18,7 +18,7 @@ const store = {
 let wrongBook = new Set(store.get('kr-wrong-v1', []));
 const saveWrong = () => store.set('kr-wrong-v1', [...wrongBook]);
 
-let view = { grade: null, subject: null, tab: 'read' };
+let view = { grade: null, subject: null, tab: 'read', term: '' };
 let setup = { ranges: new Set(), cat: 'mix', count: 10 };
 let run = null;
 
@@ -81,10 +81,14 @@ function renderSubject() {
       <button role="tab" data-tab="read" aria-selected="${view.tab === 'read'}">讀重點</button>
       <button role="tab" data-tab="practice" aria-selected="${view.tab === 'practice'}">做練習</button></div>`;
   let body;
+  const terms = [...new Set(list.map(u => u.term).filter(Boolean))];
+  if (view.term && !terms.includes(view.term)) view.term = '';
+  const termBar = terms.length > 1 ? `<div class="seg" role="group" aria-label="範圍">${['', ...terms].map(t => `<button data-term="${esc(t)}" aria-pressed="${(view.term || '') === t}">${t || '全部'}</button>`).join('')}</div>` : '';
   if (view.tab === 'read') {
-    body = `<div class="units">${list.map(u => `<a class="unit" href="#/${[view.grade, view.subject, baseName(u.file)].map(encodeURIComponent).join('/')}">
-        <span class="t">${esc(u.title)}</span>
-        <span class="m">${u.reviewBlocks ? '有重點整理' : '重點整理準備中'} · ${u.questions} 題${u.source ? ' · ' + esc(u.source) : ''}</span></a>`).join('')}</div>`;
+    const shown = list.filter(u => !view.term || u.term === view.term);
+    body = `${termBar}<div class="units">${shown.map(u => `<a class="unit" href="#/${[view.grade, view.subject, baseName(u.file)].map(encodeURIComponent).join('/')}">
+        <span class="t">${esc(u.title)}${u.subtitle ? `<span class="hint"> ${esc(u.subtitle)}</span>` : ''}</span>
+        <span class="m">${u.term ? `<span class="term">${esc(u.term)}</span> ` : ''}${u.reviewBlocks ? '重點整理' : '只有練習題'} · ${u.questions} 題</span></a>`).join('')}</div>`;
   } else body = '<div id="practice"></div>';
   $('#app').innerHTML = `<div class="stack">${pickers()}${tabs}${body}</div>`;
   if (view.tab === 'practice') renderPractice();
@@ -98,7 +102,9 @@ async function renderUnit(meta) {
   $('#app').innerHTML = `<div class="stack">
     <div class="crumb"><a href="#/${[view.grade, view.subject].map(encodeURIComponent).join('/')}">${esc(view.grade)} · ${esc(view.subject)}</a></div>
     <h2>${esc(u.title)}</h2>
-    ${u.source || u.term ? `<div class="hint">${esc([u.source, u.term].filter(Boolean).join(' · '))}</div>` : ''}
+    ${u.subtitle ? `<div class="sub">${esc(u.subtitle)}</div>` : ''}
+    ${u.source || u.term ? `<div class="hint">${esc([u.source, u.term && u.term + '範圍'].filter(Boolean).join(' · '))}</div>` : ''}
+    ${u.note ? `<div class="note">${esc(u.note)}</div>` : ''}
     ${blocks}
     <div class="row">${meta.questions ? `<button class="primary" data-practice-unit="${esc(meta.file)}">練習這一課（${meta.questions} 題）</button>` : ''}</div>
   </div>`;
@@ -107,8 +113,9 @@ function renderBlock(b) {
   const h = b.heading ? `<h3>${esc(b.heading)}</h3>` : '';
   switch (b.kind) {
     case 'points': return `<section class="card block">${h}<ul>${(b.items || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>`;
-    case 'words': return `<section class="card block">${h}<div class="words">${(b.items || []).map(w => `<div class="word"><b>${esc(w.word)}</b><span>${esc(w.meaning)}${w.example ? `<br><span class="hint">例：${esc(w.example)}</span>` : ''}</span></div>`).join('')}</div></section>`;
+    case 'words': return `<section class="card block">${h}<div class="words">${(b.items || []).map(w => `<div class="word"><b>${esc(w.word)}${w.zhuyin ? `<small class="zy">${esc(w.zhuyin)}</small>` : ''}</b><span>${esc(w.meaning)}${w.example ? `<br><span class="hint">例：${esc(w.example)}</span>` : ''}</span></div>`).join('')}</div></section>`;
     case 'table': return `<section class="card block">${h}<div class="tablewrap"><table><thead><tr>${(b.columns || []).map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(b.rows || []).map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>`;
+    case 'qa': return `<section class="card block">${h}<div class="qa">${(b.items || []).map(x => `<details><summary>${esc(x.q)}${x.hint ? `<span class="hint">（${esc(x.hint)}）</span>` : ''}</summary><div class="ans"><b>${esc(x.a)}</b>${x.why ? `<span class="hint">${esc(x.why)}</span>` : ''}</div></details>`).join('')}</div></section>`;
     default: return `<section class="card block">${h}<p>${esc(b.body ?? b.text ?? '')}</p></section>`;
   }
 }
@@ -138,7 +145,8 @@ async function renderPractice() {
   el.innerHTML = `<section class="card stack">
     <div><div class="label">範圍（點一下可取消或加回）</div>
       <div class="row">${list.map(u => `<button class="chip" data-range="${esc(u.file)}" aria-pressed="${setup.ranges.has(u.file)}">${esc(u.title)}</button>`).join('')}
-      <button class="text" id="allRange">${setup.ranges.size === list.length ? '只留一個' : '全選'}</button></div></div>
+      <button class="text" id="allRange">${setup.ranges.size === list.length ? '只留一個' : '全選'}</button>
+      ${[...new Set(list.map(u => u.term).filter(Boolean))].map(t => `<button class="text" data-term-range="${esc(t)}">只選${esc(t)}</button>`).join('')}</div></div>
     <div><div class="label">題型</div><div class="seg" role="group" aria-label="題型">
       <button data-cat="mix" aria-pressed="${setup.cat === 'mix'}">綜合</button>
       ${[...cats].map(c => `<button data-cat="${esc(c)}" aria-pressed="${setup.cat === c}">${esc(c)}</button>`).join('')}</div></div>
@@ -210,6 +218,7 @@ function renderQuiz() {
       <div class="chars">${[...q.sentence].map((ch, i) => /\p{Script=Han}/u.test(ch) ? `<button data-ch="${i}">${esc(ch)}</button>` : `<span style="align-self:center">${esc(ch)}</span>`).join('')}</div>
       <div id="fixStep2"></div>`;
   } else {
+    if (q.context) body += `<div class="context">${esc(q.context)}</div>`;
     body += `<p class="q">${esc(q.q)}</p>`;
     if (q.type === 'tf') body += `<div class="tf opts"><button class="opt" data-ans="true">○ 對</button><button class="opt" data-ans="false">✕ 錯</button></div>`;
     else body += `<div class="opts">${q.order.map((oi, k) => `<button class="opt" data-ans="${oi}"><span class="k">${KEYS[k]}</span><span>${esc(q.options[oi])}</span></button>`).join('')}</div>`;
@@ -283,7 +292,7 @@ function finish() {
     </section>
     ${run.wrong.length ? `<section class="card wrong"><div class="label">這回答錯的題目</div>${run.wrong.map(w => {
       const [yours, right] = describe(w.q, w.val);
-      return `<div class="item">${w.q.passage ? `<div class="hint">${esc(w.q.groupCat)}：${esc(w.q.passage.slice(0, 40))}…</div>` : ''}<div class="qq">${esc(w.q.q || w.q.sentence)}</div><div class="aa">你的答案：<s>${esc(yours)}</s>　正確答案：<b>${esc(right)}</b></div>${w.q.why ? `<div class="hint">${esc(w.q.why)}</div>` : ''}</div>`;
+      return `<div class="item">${w.q.passage ? `<div class="hint">${esc(w.q.groupCat)}：${esc(w.q.passage.slice(0, 40))}…</div>` : ''}${w.q.context ? `<div class="hint">${esc(w.q.context)}</div>` : ''}<div class="qq">${esc(w.q.q || w.q.sentence)}</div><div class="aa">你的答案：<s>${esc(yours)}</s>　正確答案：<b>${esc(right)}</b></div>${w.q.why ? `<div class="hint">${esc(w.q.why)}</div>` : ''}</div>`;
     }).join('')}</section>` : ''}
   </div>`;
 }
@@ -298,6 +307,8 @@ document.addEventListener('click', async e => {
   if (d.tab) return go(view.grade, view.subject, d.tab === 'practice' ? 'practice' : '');
   if (d.range) { if (setup.ranges.has(d.range)) { if (setup.ranges.size > 1) setup.ranges.delete(d.range); } else setup.ranges.add(d.range); return renderPractice(); }
   if (b.id === 'allRange') { const l = units(); setup.ranges = setup.ranges.size === l.length ? new Set([l[0].file]) : new Set(l.map(u => u.file)); return renderPractice(); }
+  if (d.term !== undefined) { view.term = d.term; return renderSubject(); }
+  if (d.termRange) { setup.ranges = new Set(units().filter(u => u.term === d.termRange).map(u => u.file)); return renderPractice(); }
   if (d.cat) { setup.cat = d.cat; return renderPractice(); }
   if (d.count !== undefined) { setup.count = Number(d.count); return renderPractice(); }
   if (d.practiceUnit) { lastStart = () => startNormal(new Set([d.practiceUnit]), 'mix'); return lastStart(); }
@@ -325,6 +336,13 @@ document.addEventListener('keydown', e => {
     else if (q.type === 'fix' && run.fixPick !== null && /^[1-6]$/.test(e.key) && q.order[Number(e.key) - 1] !== undefined) fixChoose(q.order[Number(e.key) - 1]);
   } else if (e.key === 'Enter') next();
 });
+
+/* ---------- 字級 ---------- */
+const SIZES = [17, 19, 21];
+let sizeIdx = store.get('kr-size', 0);
+const applySize = () => { document.documentElement.style.setProperty('--base', SIZES[sizeIdx] + 'px'); const b = $('#fontSize'); if (b) b.textContent = '字級 ' + ['A', 'A＋', 'A＋＋'][sizeIdx]; };
+applySize();
+document.getElementById('fontSize')?.addEventListener('click', e => { e.stopPropagation(); sizeIdx = (sizeIdx + 1) % SIZES.length; store.set('kr-size', sizeIdx); applySize(); });
 
 /* ---------- 啟動 ---------- */
 (async () => {

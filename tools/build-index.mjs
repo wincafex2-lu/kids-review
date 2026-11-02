@@ -60,8 +60,9 @@ for (const path of await walk(DATA)) {
   if (u.review !== undefined && !Array.isArray(u.review)) err(file, 'review 要是陣列');
   (Array.isArray(u.review) ? u.review : []).forEach((b, i) => {
     const w = `重點第 ${i + 1} 塊`;
-    if (!['points', 'words', 'text', 'table'].includes(b?.kind)) return err(file, `${w} 的 kind 必須是 points/words/text/table，現在是「${b?.kind}」`);
-    if ((b.kind === 'points' || b.kind === 'words') && !Array.isArray(b.items)) err(file, `${w} 缺少 items 清單`);
+    if (!['points', 'words', 'text', 'table', 'qa'].includes(b?.kind)) return err(file, `${w} 的 kind 必須是 points/words/text/table/qa，現在是「${b?.kind}」`);
+    if (['points', 'words', 'qa'].includes(b.kind) && !Array.isArray(b.items)) return err(file, `${w} 缺少 items 清單`);
+    if (b.kind === 'qa' && b.items.some(x => !x?.q || !x?.a)) err(file, `${w} 每一題都要有 q（問題）和 a（答案）`);
     if (b.kind === 'words' && Array.isArray(b.items) && b.items.some(x => !x?.word)) err(file, `${w} 每個語詞都要有 word`);
     if (b.kind === 'text' && !b.body) err(file, `${w} 缺少 body`);
     if (b.kind === 'table' && (!Array.isArray(b.columns) || !Array.isArray(b.rows))) err(file, `${w} 表格要有 columns 和 rows`);
@@ -79,7 +80,7 @@ for (const path of await walk(DATA)) {
   if (!g.has(subject)) g.set(subject, []);
   g.get(subject).push({
     file, title: u.title || fname, order: u.order ?? (m ? Number(m[1]) : 999),
-    source: u.source || '', term: u.term || '',
+    source: u.source || '', term: u.term || '', subtitle: u.subtitle || '',
     reviewBlocks: (u.review || []).length, questions: n, cats: counts,
   });
 }
