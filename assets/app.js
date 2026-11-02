@@ -401,7 +401,7 @@ document.addEventListener('keydown', e => {
   else if (q.type === 'fix' && run.fixFound && /^[1-6]$/.test(e.key) && q.order[Number(e.key) - 1] !== undefined) pickFix(q.order[Number(e.key) - 1]);
 });
 $('#search').addEventListener('input', e => renderSearch(e.target.value.trim()));
-// 平板：側欄固定在畫面上時，在側欄滑動不要帶動右邊內容（iOS Safari 不支援用 CSS 擋），
+// 側欄固定在畫面上時，在側欄滑動或滾輪不要帶動右邊內容（iOS Safari 不支援用 CSS 擋），
 // 只有單元清單本身可以捲，捲到頭或尾也不會再傳到整頁。
 (() => {
   const side = $('.sidebar'); let y0 = 0;
@@ -413,6 +413,17 @@ $('#search').addEventListener('input', e => renderSearch(e.target.value.trim()))
       const dy = e.touches[0].clientY - y0;
       const atTop = list.scrollTop <= 0, atEnd = list.scrollTop + list.clientHeight >= list.scrollHeight - 1;
       if ((dy > 0 && atTop) || (dy < 0 && atEnd)) e.preventDefault();
+      return;
+    }
+    e.preventDefault();
+  }, { passive: false });
+  // 電腦滑鼠滾輪也一樣：在側欄滾動只捲單元清單，不捲右邊
+  side.addEventListener('wheel', e => {
+    if (e.ctrlKey || getComputedStyle(side).position !== 'sticky') return;
+    const list = e.target.closest('#lessons');
+    if (list && list.scrollHeight > list.clientHeight + 1) {
+      const atTop = list.scrollTop <= 0, atEnd = list.scrollTop + list.clientHeight >= list.scrollHeight - 1;
+      if ((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atEnd)) e.preventDefault();
       return;
     }
     e.preventDefault();
