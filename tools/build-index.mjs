@@ -57,6 +57,9 @@ for (const path of await walk(DATA)) {
   let u;
   try { u = JSON.parse(await readFile(path, 'utf8')); } catch (e) { err(file, `JSON 格式錯誤（${e.message}）`); continue; }
   if (!u.title) err(file, '缺少 title（單元名稱）');
+  // 網站是公開的：不可放雲端硬碟連結（教師用課本 PDF 等不可公開的檔案）
+  const raw = JSON.stringify(u);
+  if (/drive\.google\.com|docs\.google\.com|drive\.usercontent/.test(raw)) err(file, '含有 Google 雲端硬碟連結。網站是公開的，教師用課本 PDF 等連結不可放進來，請刪除該連結（可改寫成「南一三上國語課本 第6–13頁」這類文字）');
   if (u.review !== undefined && !Array.isArray(u.review)) err(file, 'review 要是陣列');
   (Array.isArray(u.review) ? u.review : []).forEach((b, i) => {
     const w = `重點第 ${i + 1} 塊`;
