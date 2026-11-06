@@ -22,6 +22,7 @@ const unitCache = new Map();
 const state = { grade: null, subject: null, scope: store.get('kr-scope', ''), mode: 'review', unit: null };
 let practice = { filter: 'mix', size: store.get('kr-round', 10) };
 let run = null;
+let confirmClear = false;
 
 /* ---------- 資料 ---------- */
 const dataUrl = file => 'data/' + file.split('/').map(encodeURIComponent).join('/');
@@ -190,6 +191,7 @@ async function drawPool(filter = practice.filter) {
 }
 const examPlan = () => INDEX.config.exam?.[state.subject] || null;
 async function startRound(kind = 'normal') {
+  confirmClear = false;
   let draws;
   if (kind === 'wrong') {
     draws = (await drawPool('mix')).map(d => d.filter(q => wrongBook.has(q.key))).filter(d => d.length);
@@ -239,7 +241,7 @@ async function renderPractice() {
     <div class="exam-filters" role="group" aria-label="每回題數">${ROUND_SIZES.map(n => `<button data-size="${n}" aria-pressed="${practice.size === n}">${n ? `每回 ${n} 題` : '全部題目'}</button>`).join('')}</div>
     <p class="exam-format-note">${run.kind === 'exam' ? `模擬考依考卷題型出題：${esc(planDesc)}。` : '選好後按「確認答案」才判分；改錯字點了就判分。'}切換題型或題數會重新開始一回。</p>
     ${body}
-    <div class="math-local-note"><p>此範圍錯題本：${wc} 題</p>${wc && run.kind !== 'wrong' ? '<button class="text-button" data-round="wrong">改練錯題</button>' : ''}${wrongBook.size ? ' <button class="text-button" id="clearWrong">清空全部錯題</button>' : ''}<small>錯題只存在這台裝置的瀏覽器，不會上傳。答對一次就會從錯題本移除。</small></div>`;
+    <div class="math-local-note"><p>此範圍錯題本：${wc} 題</p>${wc && run.kind !== 'wrong' ? '<button class="text-button" data-round="wrong">改練錯題</button>' : ''}${wrongBook.size ? (confirmClear ? ' <span class="clear-confirm">確定要清空全部錯題嗎？ <button class="text-button" id="clearWrongYes">確定清空</button> <button class="text-button" id="clearWrongNo">取消</button></span>' : ' <button class="text-button" id="clearWrong">清空全部錯題</button>') : ''}<small>錯題只存在這台裝置的瀏覽器，不會上傳。答對一次就會從錯題本移除。</small></div>`;
   document.title = `${title}｜${state.subject}練習・${state.grade}`;
 }
 function questionMarkup() {
@@ -367,7 +369,10 @@ document.addEventListener('click', e => {
   if (d.unit !== undefined) { if (!d.unit) return; go(d.unit); $('#reader').scrollIntoView({ block: 'start' }); return; }
   if (d.practiceUnit) { run = null; return go(d.practiceUnit, 'practice'); }
   if (b.id === 'fontToggle') { const on = !document.body.classList.contains('large-type'); document.body.classList.toggle('large-type', on); b.setAttribute('aria-pressed', String(on)); store.set('kr-large', on); return; }
-  if (b.id === 'clearWrong') { if (confirm('確定要清空全部錯題嗎？')) { wrongBook.clear(); saveWrong(); renderPractice(); } return; }
+  // 不用 window.confirm()：Artifact 沙盒會擋掉，改成頁面內確認
+  if (b.id === 'clearWrong') { confirmClear = true; return renderPractice(); }
+  if (b.id === 'clearWrongNo') { confirmClear = false; return renderPractice(); }
+  if (b.id === 'clearWrongYes') { confirmClear = false; wrongBook.clear(); saveWrong(); return renderPractice(); }
   if (!run) return;
   if (d.filter) { practice.filter = d.filter; return startRound('normal'); }
   if (d.size !== undefined) { practice.size = Number(d.size); store.set('kr-round', practice.size); return startRound(run.kind === 'exam' ? 'normal' : run.kind); }
