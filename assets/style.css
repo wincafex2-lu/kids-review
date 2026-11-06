@@ -23,3 +23,4 @@
 .math-next,.math-submit{position:sticky;bottom:12px;z-index:3;box-shadow:0 6px 18px #1b605840}.math-submit:disabled{box-shadow:none}
 .two-col-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.two-col-options .math-option{padding:12px 14px}.two-col-options .math-option.selected,.two-col-options .math-option.correct-option,.two-col-options .math-option.wrong-option{padding:11px 13px}@media(max-width:650px){.two-col-options{gap:7px}.two-col-options .math-option{padding:11px 10px;gap:8px;font-size:18px}.two-col-options .math-option.selected,.two-col-options .math-option.correct-option,.two-col-options .math-option.wrong-option{padding:10px 9px}}
 @media(max-width:650px){.grid-options.grid-words{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-words .math-option{min-height:58px}}
+.game-link{text-decoration:none;white-space:nowrap}

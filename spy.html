@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d1b2e">
+<title>找出間諜｜改錯字特訓</title>
+<meta name="description" content="隊員舉牌排成句子，找出舉錯字的間諜，再把正確的隊員放回隊伍。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="assets/spy.css">
+<!-- 點陣人物：Agent 辦公室 W003-1（© 泓，LicenseRef-AgentOffice-AllRightsReserved），經作者同意用在本站 -->
+<script src="assets/people/people-sprites.js" defer></script>
+<script src="assets/people/people.js" defer></script>
+<script src="assets/spy.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><img id="logo" alt=""><div><h1>找出間諜</h1><small>改錯字特訓 · <a class="home" href="./">回複習小書</a></small></div></div>
+    <div class="hud" aria-live="polite">
+      <span class="chip">第 <b id="qn">0</b>/<span id="qt">–</span> 句</span>
+      <span class="chip">分數 <b id="score">0</b></span>
+      <button class="mute" id="mute" aria-pressed="false" title="音效開關">🔊</button>
+    </div>
+  </header>
+
+  <section class="stage" id="stage" aria-label="隊伍廣場">
+    <div class="sky">
+      <img class="sun" id="sun" alt="">
+      <div class="cloud" style="top:34px"></div><div class="cloud" style="top:64px;animation-delay:-23s"></div>
+      <div class="city" id="city"></div>
+      <p class="mission" id="mission"></p>
+    </div>
+    <div class="plaza"><div class="line" id="line"></div></div>
+    <div class="road" id="road"></div>
+  </section>
+
+  <section class="panel" id="setupPanel" hidden></section>
+
+  <section class="panel" id="benchPanel" hidden>
+    <h2>間諜被抓走了！隊伍缺了一個人，誰才是真正的隊員？</h2>
+    <p class="src">小心，間諜可能換了衣服又混在候補裡。點對的人，讓他跳回隊伍。</p>
+    <div class="bench" id="bench"></div>
+  </section>
+
+  <section class="panel" id="resultPanel" hidden></section>
+</div>
+</body>
+</html>
