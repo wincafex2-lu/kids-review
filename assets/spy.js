@@ -144,7 +144,9 @@ const IMG = {
   claw: pix(['....KKKKKK....', '....KQQQQK....', '...KKQQQQKK...', '..KQQKKKKQQK..', '.KQQK....KQQK.', 'KQQK......KQQK', 'KQK........KQK', 'KQK........KQK', '.KQK......KQK.', '..KK......KK..'], PAL),
   clawShut: pix(['....KKKKKK....', '....KQQQQK....', '...KKQQQQKK...', '..KQQKKKKQQK..', '..KQK....KQK..', '..KQK....KQK..', '...KQK..KQK...', '...KQK..KQK...', '....KQKKQK....', '.....KK.KK....'], PAL),
   spring: pix(['KKKKKKKKKKKK', 'KYYYYYYYYYYK', 'KKKKKKKKKKKK', '...KQQQQK...', '....KQQK....', '...KQQQQK...', '....KQQK....', '...KQQQQK...', '..KKKKKKKK..', '..KMMMMMMK..'], PAL),
-  magnet: pix(['..KKKKKKKK..', '.KRRRRRRRRK.', 'KRRKKKKKKRRK', 'KRRK....KRRK', 'KRRK....KRRK', 'KRRK....KRRK', 'KQQK....KQQK', 'KQQK....KQQK', 'KKKK....KKKK'], { K: '#0d0a16', R: '#e0413a', Q: '#dfe3ea' }),
+  banana: pix(['.....KK.....', '....KYYK....', '.KKKYYYYKKK.', 'KYYYYKKYYYYK', 'KYYK....KYYK', '.KK......KK.'], { K: '#0d0a16', Y: '#ffd23f' }),
+  bubbleIcon: pix(['..KKKKKK..', '.KHHLLLLK.', 'KHWLLLLLLK', 'KHLLLLLLLK', 'KLLLLLLLLK', 'KLLLLLLLLK', 'KLLLLLLLHK', 'KLLLLLLHHK', '.KLLLLLHK.', '..KKKKKK..'], { K: '#0d0a16', L: '#cdeeff', H: '#8fc8ff', W: '#ffffff' }),
+  tornado: [0, 1].map(f => pix(['.KKKKKKKKKKKKKK.', 'KQQHHQQQQHHQQQQK', '.KQQQQHHQQQQHQK.', '..KHQQQQQHHQQK..', '..KQQHHQQQQQHK..', '...KQQQQHHQQK...', '...KHHQQQQQQK...', '....KQQHHQQK....', '....KQQQQHHK....', '.....KHHQQK.....', '.....KQQHHK.....', '......KQQK......', '......KHQK......', '.......KK.......'].map(r => f ? r.replace(/[QH]/g, c => c === 'Q' ? 'H' : 'Q') : r), { K: '#3a3f55', Q: '#b8c0d0', H: '#e8edf5' })),
   vacuum: pix(['..........KKKKKKK...', '.........KYYYYYYYK..', 'KKKK....KYYYYYYYYYK.', 'KQQKKKKKKYYKKKKYYYYK', 'KQQQQQQQQYYKWWKYYYYK', 'KQQKKKKKKYYKKKKYYYYK', 'KKKK....KYYYYYYYYYK.', '.........KYYYYYYYYK.', '.........KKKKKKKKKK.', '..........KK....KK..', '..........KK....KK..', '...........K....K...'], { K: '#0d0a16', Y: '#3fa7d6', Q: '#dfe3ea', W: '#ffcc4d' }),
   net: pix(['..KKKKKK........', '.KHMHMHMK.......', 'KMHMHMHMHK......', 'KHMHMHMHMK......', 'KMHMHMHMHK......', 'KHMHMHMHMK......', '.KHMHMHMK.......', '..KKKKKKKE......', '.........EE.....', '..........EE....', '...........EE...', '............EE..', '.............EE.', '..............EE', '...............E', '................'], { K: '#0d0a16', H: '#ffffff', M: '#c9c3e6', E: '#8a5a2b' }),
   cage: pix(['.......KK.......', '......K..K......', 'KKKKKKKKKKKKKKKK', 'KQQQQQQQQQQQQQQK', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'KQQQQQQQQQQQQQQK', 'KKKKKKKKKKKKKKKK'], { K: '#0d0a16', Q: '#ffcc4d' }),
@@ -494,33 +496,33 @@ const METHODS = [
     }
     stopF(); e.remove();
   } },
-  { key: 'magnet', name: '超級磁鐵', icon: IMG.magnet, async run(el, hit) {
-    const p = PX(), t = imgBox(el);
+  { key: 'banana', name: '香蕉皮滑倒', icon: IMG.banana, async run(el, hit) {
+    const p = PX(), t = imgBox(el), W = stage.clientWidth;
     el.classList.remove('locked');
-    const rig = document.createElement('div'); rig.className = 'rig';
-    rig.innerHTML = `<i class="cable"></i><img alt="" src="${IMG.magnet}" style="width:${12 * p}px;height:${9 * p}px">`;
-    stage.append(rig);
-    const rx = t.cx - 6 * p, top = -12 * p, stop = t.y - 16 * p - 14 * p;
-    SFX.motor();
-    await mv(rig, [at(rx, top), at(rx, stop)], 800, 'cubic-bezier(.3,0,.7,1)');
-    SFX.hum(); const zz = setInterval(() => sparkAt(t.cx + (Math.random() - .5) * 14 * p, stop + 9 * p + Math.random() * 6 * p), 90);
-    const g = lift(el);
+    // 香蕉皮從旁邊滑到腳底下
+    const R = t.cx > W / 2, bw = 12 * p, by = t.b - 5 * p, bx = t.cx - bw / 2, x0 = R ? W + 20 : -bw - 20;
+    const bn = spr(IMG.banana, 12, 6, 9);
+    SFX.swoosh();
+    await mv(bn, [at(x0, by, 'rotate(0)'), at(bx, by, `rotate(${R ? -720 : 720}deg)`)], 700, 'cubic-bezier(.2,.8,.3,1)');
+    await wait(150);
+    const g = lift(el), dir = R ? -1 : 1;
+    g.style.transformOrigin = '50% 90%';
+    SFX.boing();
     if (hit) {
-      toSpy(g); say(t.cx, t.y - 30 * p, '我的錢包是鐵做的啦！', 1100);
-      await mv(g, [at(0, 0), at(-p, -3 * p, 'rotate(-6deg)'), at(p, -2 * p, 'rotate(6deg)'), at(0, stop + 9 * p - t.y + 14 * p, 'rotate(0)')], 700, 'cubic-bezier(.6,0,1,1)');
-      SFX.clack(); clearInterval(zz); await wait(300);
-      const up = top - 260;
-      await Promise.all([mv(rig, [at(rx, stop), at(rx, up)], 900, 'ease-in'), mv(g, [at(0, stop + 9 * p - t.y + 14 * p), at(0, up + 9 * p - t.y + 14 * p)], 900, 'ease-in')]);
-      g.remove();
+      toSpy(g); say(t.cx, t.y - 17 * p, '哇——滑倒啦！', 1000);
+      mv(bn, [at(bx, by), at(bx - dir * 30, by - 10 * p, 'rotate(200deg)'), { ...at(bx - dir * 50, by, 'rotate(360deg)'), opacity: 0 }], 600, 'ease-out');
+      await mv(g, [at(0, 0, 'rotate(0)'), at(dir * 2 * p, -8 * p, `rotate(${-dir * 100}deg)`), at(dir * 6 * p, 2 * p, `rotate(${-dir * 90}deg)`)], 450, 'ease-out');
+      SFX.slam(); shake();
+      await mv(g, [at(dir * 6 * p, 2 * p, `rotate(${-dir * 90}deg)`), { ...at(dir * (W + 40), 2 * p, `rotate(${-dir * 90 - dir * 720}deg)`), opacity: .9 }], 1000, 'cubic-bezier(.3,0,.8,.6)');
+      g.remove(); bn.remove();
     } else {
-      await mv(g, [at(0, 0), at(0, -6 * p)], 500, 'ease-out');
-      clearInterval(zz); say(t.cx, t.y - 30 * p, '吸不起來…他身上沒有可疑的東西', 1100); await wait(600);
-      await mv(g, [at(0, -6 * p), at(0, 0)], 300, 'cubic-bezier(.5,0,1,1)'); putBack(el, g); shake(); await wait(400);
-      await mv(rig, [at(rx, stop), at(rx, top - 200)], 700, 'ease-in');
+      await mv(g, [at(0, 0, 'rotate(0)'), at(0, -6 * p, `rotate(${-dir * 30}deg)`), at(0, 4 * p, 'rotate(0) scaleY(.75)')], 450, 'ease-out');
+      SFX.slam(); say(t.cx, t.y - 17 * p, '哎唷，屁股好痛…我是好人啦', 1100); await wait(900);
+      await mv(g, [at(0, 4 * p, 'scaleY(.75)'), at(0, 0, 'scaleY(1)')], 250, 'steps(2)'); putBack(el, g);
+      await mv(bn, [at(bx, by), at(x0, by, 'rotate(360deg)')], 500, 'ease-in'); bn.remove();
     }
-    rig.remove();
   } },
-  { key: 'bubble', name: '泡泡封印', icon: IMG.spring, async run(el, hit) {
+  { key: 'bubble', name: '泡泡封印', icon: IMG.bubbleIcon, async run(el, hit) {
     const p = PX(), t = imgBox(el), gb = box(el);
     el.classList.remove('locked');
     SFX.blow();
@@ -601,34 +603,32 @@ const METHODS = [
     }
     n.remove();
   } },
-  { key: 'portal', name: '任意傳送門', icon: IMG.pitIcon, async run(el, hit) {
-    const p = PX(), t = imgBox(el), gb = box(el);
+  { key: 'tornado', name: '龍捲風', icon: IMG.tornado[0], async run(el, hit) {
+    const p = PX(), t = imgBox(el), W = stage.clientWidth;
     el.classList.remove('locked');
-    const pw = 20 * p, ph = 6 * p;
-    const mk = (x, y) => { const d = document.createElement('div'); d.className = 'portal'; Object.assign(d.style, { left: x - pw / 2 + 'px', top: y - ph / 2 + 'px', width: pw + 'px', height: ph + 'px' }); stage.append(d); return d; };
-    const pa = mk(t.cx, t.b - p);
-    SFX.warp();
-    await mv(pa, [{ transform: 'scale(0) rotate(0)' }, { transform: 'scale(1.2)' }, { transform: 'scale(1)' }], 400, 'ease-out');
-    const g = lift(el); g.style.zIndex = 8;
-    const H = gb.h, cut = (d, r = 0) => ({ transform: `translateY(${d}px) rotate(${r}deg)`, clipPath: `inset(-200px -40px ${Math.max(0, d)}px -40px)` });
+    // 龍捲風從左邊沿著地面捲過來（畫成兩倍大）
+    const tw = 32 * p, th = 28 * p, ty = t.b - th + 2 * p, tx = t.cx - tw / 2;
+    const tn = spr(IMG.tornado[0], 32, 28, 13), stopT = loop(tn, IMG.tornado, 90);
+    const wob = x => [at(x - 6, ty, 'skewX(6deg)'), at(x + 6, ty, 'skewX(-6deg)')];
+    SFX.suck();
+    await mv(tn, [at(-tw - 20, ty), ...wob(tx * .5), at(tx, ty)], 900, 'ease-out');
+    const g = lift(el); g.style.zIndex = 14;
     if (hit) {
-      toSpy(g); say(t.cx, t.y - 17 * p, '這是去哪裡啦～', 1000);
-      await mv(g, [cut(0), cut(H * .3, -8), cut(H * .6, 8), cut(H, 0)], 1000, 'ease-in'); g.remove();
-      const top = -gb.y + 4 * p, pb = mk(stage.clientWidth - 30 * p, 14 * p);
-      await mv(pb, [{ transform: 'scale(0)' }, { transform: 'scale(1)' }], 250);
-      const tiny = lift(el); el.classList.add('gone'); toSpy(tiny); tiny.style.zIndex = 12;
-      const dx = stage.clientWidth - 30 * p - gb.cx, dy = 14 * p - gb.cy;
-      await mv(tiny, [{ ...at(dx, dy, 'scale(.4) rotate(0)'), opacity: 1 }, { ...at(dx + 200, dy - 120, 'scale(.2) rotate(720deg)'), opacity: 0 }], 800, 'ease-out');
-      tiny.remove(); await mv(pb, [{ transform: 'scale(1)' }, { transform: 'scale(0)' }], 250); pb.remove();
+      toSpy(g); say(t.cx, t.y - 24 * p, '轉～轉～轉～頭好暈！', 1100);
+      const up = -t.b - 60;
+      await mv(g, [at(0, 0, 'rotate(0)'), at(6, -10 * p, 'rotate(360deg) scale(.9)'), at(-6, -20 * p, 'rotate(720deg) scale(.8)')], 800, 'ease-in');
+      await Promise.all([
+        mv(tn, [at(tx, ty), at(W + 40, ty - 20)], 900, 'ease-in'),
+        mv(g, [at(-6, -20 * p, 'rotate(720deg) scale(.8)'), { ...at(W + 40 - tx, up, 'rotate(1800deg) scale(.3)'), opacity: 0 }], 900, 'ease-in'),
+      ]);
+      g.remove();
     } else {
-      await mv(g, [cut(0), cut(H * .5, 10)], 450, 'ease-in');
-      say(t.cx, t.y - 6 * p, '欸？傳送失敗！', 900);
-      const pb = mk(t.cx, gb.y - 6 * p); await mv(pb, [{ transform: 'scale(0)' }, { transform: 'scale(1)' }], 250);
-      g.style.clipPath = ''; SFX.warp();
-      await mv(g, [{ transform: `translateY(${-H - 8 * p}px) rotate(180deg)`, clipPath: 'inset(-200px -40px 0 -40px)' }, { transform: `translateY(${-H * .4}px) rotate(270deg)`, clipPath: 'inset(-200px -40px 0 -40px)' }, { transform: 'translateY(0) rotate(360deg)', clipPath: 'inset(-200px -40px 0 -40px)' }], 700, 'ease-in');
-      putBack(el, g); shake(); await mv(pb, [{ transform: 'scale(1)' }, { transform: 'scale(0)' }], 250); pb.remove(); await wait(500);
+      await mv(g, [at(0, 0, 'rotate(0)'), at(0, -8 * p, 'rotate(360deg)'), at(0, -8 * p, 'rotate(720deg)')], 900, 'linear');
+      say(t.cx, t.y - 28 * p, '呼～吹錯人了', 900);
+      mv(tn, [at(tx, ty), at(W + 40, ty)], 800, 'ease-in');
+      await mv(g, [at(0, -8 * p, 'rotate(720deg)'), at(0, 0, 'rotate(720deg)')], 300, 'cubic-bezier(.5,0,1,1)'); putBack(el, g); shake(); await wait(600);
     }
-    await mv(pa, [{ transform: 'scale(1)' }, { transform: 'scale(0) rotate(180deg)' }], 300, 'ease-in'); pa.remove();
+    stopT(); tn.remove();
   } },
   { key: 'cage', name: '天降鐵籠', icon: IMG.cage, async run(el, hit) {
     const p = PX(), t = imgBox(el);
