@@ -1,0 +1,131 @@
+/* 知識島冒險：沿用 style.css 的顏色與元件（math-option、glyph-button、primary-button…），這裡只放冒險模式自己的版面 */
+.adv-header-actions{display:flex;gap:10px;align-items:center}
+.adv-header-actions a.text-button{text-decoration:none}
+.adv-stage{max-width:880px;margin:0 auto;padding:30px 0 10px;outline:none}
+.adv-title{font-family:"Noto Serif TC","Songti TC",serif;font-weight:600;font-size:34px;line-height:1.45;margin:8px 0 12px}
+.adv-h{font-family:"Noto Serif TC","Songti TC",serif;font-size:22px;font-weight:600;margin:0 0 14px}
+.adv-hint{font-size:15px;color:var(--muted);margin:0 0 12px}
+.adv-panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:0 0 20px}
+.adv-hero-banner{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:10px 0 26px}
+.adv-hero-banner p{font-size:16px;color:var(--muted);margin:6px 0 0}
+.banner-art{font-size:58px;white-space:nowrap;line-height:1}
+.banner-art span{font-size:34px;margin:0 8px;vertical-align:middle}
+/* 選角色 */
+.hero-pick{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.hero-pick button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border:1px solid #cedbd0;border-radius:12px;background:white;color:var(--ink);font-size:15px}
+.hero-pick .emoji{font-size:38px;line-height:1.3}
+.hero-pick button[aria-pressed=true]{border:2px solid var(--teal);background:#e6f1ea;padding:9px 3px}
+/* 年級與路線切換：沿用 grade-switch / scope-switch 的外觀 */
+.adv-grades{margin-bottom:16px}
+.adv-routes{margin:0 0 18px}
+/* 島嶼 */
+.island-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.island{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto auto;column-gap:14px;align-items:center;text-align:left;padding:16px 18px;border:1px solid #cedbd0;border-radius:14px;background:linear-gradient(160deg,#f3f8f1,#fffefb);color:var(--ink)}
+.island:hover:not(:disabled){border-color:var(--teal);background:#e9f2eb}
+.island:disabled{opacity:.5;cursor:default}
+.island-icon{grid-row:1/4;font-size:44px;line-height:1}
+.island-name{font-family:"Noto Serif TC","Songti TC",serif;font-size:22px;font-weight:600}
+.island-sub{font-size:14px;color:var(--muted)}
+.island-stars{font-size:15px;color:#8a6420}
+.adv-bag-link{text-align:center;margin:6px 0 10px}
+/* 地圖 */
+.adv-crumbs{display:flex;align-items:center;gap:12px;font-size:15px;color:var(--muted);margin-bottom:14px}
+.map-head{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+.map-icon{font-size:56px;line-height:1}
+.map-score{margin:0;font-size:16px;color:var(--muted)}
+.adv-map{list-style:none;margin:0;padding:6px 0 0;position:relative}
+.adv-map::before{content:"";position:absolute;left:50%;top:20px;bottom:40px;border-left:4px dashed #c9d9cb;transform:translateX(-2px)}
+.map-node{position:relative;display:flex;margin:0 0 14px}
+.map-node:nth-child(odd){justify-content:flex-start}
+.map-node:nth-child(even){justify-content:flex-end}
+.map-node button{position:relative;display:flex;align-items:center;gap:14px;width:calc(50% + 34px);text-align:left;padding:12px 16px;border:1px solid #cedbd0;border-radius:16px;background:white;color:var(--ink)}
+.map-node:nth-child(odd) button{flex-direction:row-reverse;text-align:right}
+.map-node button:hover:not(:disabled){border-color:var(--teal);background:#eef5ef}
+.map-node.locked button{background:#f2f2ec;color:#9aa5a2;cursor:default}
+.node-dot{flex:none;display:grid;place-items:center;width:62px;height:62px;border-radius:50%;background:var(--teal);color:white;font-size:26px;font-weight:700;border:4px solid #f7f7ef;box-shadow:0 0 0 2px var(--teal)}
+.map-node.cleared .node-dot{background:#fff6dc;box-shadow:0 0 0 2px #c79a34;font-size:32px}
+.map-node.locked .node-dot{background:#e3e6df;box-shadow:0 0 0 2px #cfd5cd;font-size:24px}
+.node-text{display:flex;flex-direction:column;min-width:0}
+.node-num{font-size:13px;color:var(--teal);letter-spacing:.06em}
+.node-title{font-size:18px;font-weight:600;line-height:1.5}
+.node-sub{font-size:13px;color:var(--muted)}
+.node-stars{font-size:18px;color:#d4a020;letter-spacing:2px}
+.node-stars span,.result-stars span{color:#dfe3dc}
+.map-node.boss button{width:100%;flex-direction:row;text-align:left;justify-content:center;border:2px solid #b5864a;background:linear-gradient(160deg,#fff7ea,#fffefb)}
+.map-node.boss.locked button{border:1px dashed #cfd5cd;background:#f2f2ec}
+.map-node.boss .node-dot{width:76px;height:76px;font-size:40px;background:#7d3c2a;box-shadow:0 0 0 2px #b5864a}
+.map-node.boss.locked .node-dot{background:#e3e6df;box-shadow:0 0 0 2px #cfd5cd;font-size:28px}
+.adv-map-foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-top:20px;font-size:14px;color:var(--muted)}
+.unlock-toggle{display:flex;align-items:center;gap:6px;cursor:pointer}
+.unlock-toggle input{width:20px;height:20px;accent-color:var(--teal)}
+/* 關卡入口 */
+.battle-intro,.battle-result{text-align:center;padding:10px 0}
+.battle-intro p,.battle-result p{font-size:17px;color:var(--muted)}
+.battle-intro .math-actions,.battle-result .math-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:20px}
+.battle-intro a.secondary-button,.battle-result a.secondary-button{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.vs{display:flex;justify-content:center;align-items:center;gap:22px;font-size:76px;line-height:1.1;margin:10px 0 16px}
+.vs-x{font:700 30px Georgia,serif;color:#b5864a}
+.vs-monster{animation:bob 1.6s ease-in-out infinite}
+.is-boss.vs-monster,.vs-monster.is-boss{font-size:96px}
+/* 戰鬥 */
+.battle-top{display:flex;justify-content:space-between;align-items:center;font-size:15px;color:var(--muted);margin-bottom:10px}
+.battle-hud{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding:16px 20px;margin-bottom:16px;border-radius:16px;background:linear-gradient(180deg,#e7f1ea 0%,#f5f2e2 100%);border:1px solid var(--line)}
+.fighter{display:flex;align-items:center;gap:12px}
+.monster-side{flex-direction:row-reverse}
+.fighter-emoji{font-size:60px;line-height:1}
+.monster-side.is-boss .fighter-emoji{font-size:74px}
+.hearts{font-size:24px;letter-spacing:2px;white-space:nowrap}
+.hearts .lost{opacity:.45}
+.hp{min-width:150px;text-align:right}
+.hp-name{display:block;font-size:14px;color:var(--ink);font-weight:600}
+.hp-bar{height:14px;border-radius:7px;background:#e3d9cf;overflow:hidden;margin-top:4px}
+.hp-bar span{display:block;height:100%;margin-left:auto;background:linear-gradient(90deg,#d96a4a,#e49a4a);transition:width .45s ease}
+.battle-card{margin-top:0}
+.math-next.is-final{background:#8a5a1e;border-color:#8a5a1e}
+.fx-hit .fighter-emoji{animation:hit .5s ease}
+.fx-hurt .fighter-emoji{animation:hurt .5s ease}
+.fx-attack .fighter-emoji{animation:lunge .45s ease}
+.monster-side.fx-attack .fighter-emoji{animation:lunge-left .45s ease}
+@keyframes hit{0%{transform:none;filter:none}25%{transform:translateX(10px) rotate(8deg);filter:brightness(1.8)}50%{transform:translateX(-8px) rotate(-6deg)}100%{transform:none;filter:none}}
+@keyframes hurt{0%,100%{transform:none}20%{transform:translateX(-10px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+@keyframes lunge{0%,100%{transform:none}40%{transform:translateX(26px) scale(1.12)}}
+@keyframes lunge-left{0%,100%{transform:none}40%{transform:translateX(-26px) scale(1.12)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes pop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.05);opacity:1}100%{transform:none}}
+/* 結果與知識卡 */
+.result-art{font-size:80px;line-height:1.2}
+.result-stars{font-size:46px !important;color:#d4a020 !important;letter-spacing:6px;margin:4px 0 !important}
+.know-card{text-align:left;background:#fffaf0;border:2px solid #e2c98f;border-radius:14px;padding:16px 18px;box-shadow:0 3px 0 #e9dcc0}
+.battle-result .know-card{max-width:520px;margin:18px auto 0}
+.know-card.reveal{animation:pop .5s ease}
+.know-tag{font-size:13px;color:#8a6420;letter-spacing:.04em}
+.know-card h3{font-family:"Noto Serif TC","Songti TC",serif;font-size:22px;margin:4px 0 6px;line-height:1.5}
+.know-card h3 small{font-family:inherit;font-size:15px;color:var(--muted);font-weight:400;margin-left:6px}
+.know-card p{margin:0;font-size:17px !important;color:var(--ink) !important;line-height:1.75}
+.card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.large-type .node-title,.large-type .know-card p{font-size:21px !important}
+.large-type .battle-intro p,.large-type .battle-result p{font-size:20px}
+@media(prefers-reduced-motion:reduce){.fx-hit .fighter-emoji,.fx-hurt .fighter-emoji,.fx-attack .fighter-emoji,.vs-monster,.know-card.reveal{animation:none !important}.hp-bar span{transition:none}}
+@media(max-width:650px){
+  .adv-stage{padding-top:18px}
+  .adv-title{font-size:26px}
+  .adv-panel{padding:16px}
+  .adv-hero-banner{flex-direction:column;align-items:flex-start;padding-bottom:16px}
+  .banner-art{font-size:44px;align-self:center}
+  .hero-pick{grid-template-columns:repeat(3,1fr)}
+  .island-grid,.card-grid{grid-template-columns:1fr}
+  .adv-map::before{left:31px}
+  .map-node,.map-node:nth-child(even){justify-content:flex-start}
+  .map-node button,.map-node:nth-child(odd) button{width:100%;flex-direction:row;text-align:left}
+  .node-dot{width:54px;height:54px;font-size:22px}
+  .map-node.boss .node-dot{width:62px;height:62px;font-size:32px}
+  .map-node.boss button{justify-content:flex-start}
+  .vs{font-size:58px;gap:14px}
+  .battle-hud{padding:12px 14px}
+  .fighter-emoji{font-size:44px}
+  .monster-side.is-boss .fighter-emoji{font-size:54px}
+  .fighter{gap:6px}
+  .hearts{font-size:16px;letter-spacing:0}
+  .hp{min-width:80px}
+  .adv-header-actions{flex-wrap:wrap;justify-content:flex-end}
+}

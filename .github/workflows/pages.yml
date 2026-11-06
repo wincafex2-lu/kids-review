@@ -29,11 +29,13 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           mkdir _site
-          cp -r index.html assets data _site/
+          cp -r index.html adventure.html assets data _site/
           # 每次更新都換新的版本號，避免平板／手機用到舊的程式檔而打不開
           v="${GITHUB_SHA::8}"
           sed -i "s#assets/style.css\"#assets/style.css?v=$v\"#; s#assets/app.js\"#assets/app.js?v=$v\"#" _site/index.html
           grep -q "app.js?v=$v" _site/index.html
+          sed -i "s#assets/style.css\"#assets/style.css?v=$v\"#; s#assets/adventure.css\"#assets/adventure.css?v=$v\"#; s#assets/adventure.js\"#assets/adventure.js?v=$v\"#" _site/adventure.html
+          grep -q "adventure.js?v=$v" _site/adventure.html
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:
