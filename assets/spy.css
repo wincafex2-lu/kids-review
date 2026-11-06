@@ -104,9 +104,8 @@ button:focus-visible { outline: 3px solid var(--hot); outline-offset: 3px }
 .beam { position: absolute; z-index: 7; pointer-events: none; clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%); background: repeating-linear-gradient(rgba(255,240,140,.75) 0 6px, rgba(180,255,170,.55) 6px 12px); animation: flick .16s steps(2) infinite }
 @keyframes flick { 50% { opacity: .7 } }
 .pit { position: absolute; z-index: 7; border-radius: 50%; background: #120f1c; box-shadow: inset 0 4px 0 #3a3550, 0 0 0 3px #6b5a3a; pointer-events: none }
-.soap { position: absolute; z-index: 13; border-radius: 50%; pointer-events: none; background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.95) 0 9%, rgba(255,255,255,0) 10%), radial-gradient(circle, rgba(170,230,255,.12) 55%, rgba(150,200,255,.45) 72%, rgba(255,170,240,.55) 100%); box-shadow: 0 0 0 3px rgba(255,255,255,.8) }
-.portal { position: absolute; z-index: 7; border-radius: 50%; pointer-events: none; background: radial-gradient(ellipse, #12082a 0 45%, #6b3fd6 60%, #c79bff 80%, #f3e6ff 100%); box-shadow: 0 0 12px 4px rgba(170,120,255,.7) }
-.spark { position: absolute; z-index: 14; width: 8px; height: 8px; pointer-events: none; background: #ffe680; box-shadow: 0 0 0 2px #fff }
+.soap { position: absolute; left: 0; top: 0; z-index: 13; border-radius: 50%; pointer-events: none; background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.95) 0 9%, rgba(255,255,255,0) 10%), radial-gradient(circle, rgba(170,230,255,.12) 55%, rgba(150,200,255,.45) 72%, rgba(255,170,240,.55) 100%); box-shadow: 0 0 0 3px rgba(255,255,255,.8) }
+.spark { position: absolute; left: 0; top: 0; z-index: 14; width: 8px; height: 8px; pointer-events: none; background: #ffe680; box-shadow: 0 0 0 2px #fff }
 .cable { position: absolute; left: 50%; bottom: 100%; width: 4px; height: 2000px; transform: translateX(-50%); background: #5a6072; border-inline: 1px solid var(--ink) }
 .rig { position: absolute; left: 0; top: 0; z-index: 10; pointer-events: none }
 .rig img { display: block; image-rendering: pixelated }
