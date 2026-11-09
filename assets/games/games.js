@@ -369,7 +369,7 @@ const VOTE = { id: 'vote', name: '🗳️ 班會開票', how: '投票給說對�
   } };
 
 /* ---------- 題組：小偵探破案 ---------- */
-const DETECT = { id: 'detect', name: '🔍 小偵探破案', how: '先讀案件檔案（上面的文章），再從軟木板上挑出真正的線索！',
+const DETECT = { id: 'detect', name: '🔍 小偵探破案', how: '先讀案件檔案（題目卡裡的文章），再從軟木板上挑出真正的線索！',
   async play(scene, q, onItem) {
     scene.className = 'scene s-detect'; setBG(scene, 'detect');
     const n = q.items.length;
@@ -535,7 +535,7 @@ const BRIDGE = { id: 'bridge', name: '🌉 吊橋過峽谷', how: '上面的吊�
   } };
 
 /* ---------- 數學：保險箱密碼 ---------- */
-const SAFE = { id: 'safe', name: '🔐 金庫保險箱', how: '四張紙條是四組密碼，選出算對的那一組，保險箱才會打開！',
+const SAFE = { id: 'safe', name: '🔐 金庫保險箱', how: '四張紙條是四組密碼，選出正確答案那一組，保險箱才會打開！',
   async play(scene, opts, ans) {
     scene.className = 'scene s-safe'; setBG(scene, 'vault');
     const SX = 6, SY = 16, W = 32.5, H = 36.25;
@@ -1282,7 +1282,10 @@ const KINDS = { '全部': null, '是非': 'tf', '選擇': 'mc', '題組': 'group
 const POOL = { tf: [OX, BRIDGE], mc: [VOTE, SAFE, TRUCK, LOCK, TRAIN, DOVE, LAB, ...SIX], group: [DETECT] };
 const ALL = [...POOL.tf, ...POOL.mc, ...POOL.group];
 const KIND_OF = g => Object.keys(POOL).find(k => POOL[k].includes(g));
-const FOR = { ox: '是非題', bridge: '是非題', vote: '選擇題・社會', safe: '選擇題・數學', truck: '數學應用題', lock: '國語語詞', train: '國語句型', dove: '國語課文理解', lab: '選擇題・自然', detect: '題組／閱讀測驗', bomb: '國語字音字形', race: '國語字音字形', gacha: '國語字音字形', rocket: '國語字音字形', fish: '國語字音字形', boss: '國語字音字形' };
+// 隨機時，選擇題會優先挑最搭科目／題型的遊戲（BEST），其他時候各遊戲都可能出任何科目的選擇題
+const BEST = { vote: '社會', safe: '數學', truck: '數學應用題', lock: '國語語詞理解', train: '國語句型', dove: '國語課文理解', lab: '自然' };
+const FOR = { ox: '是非題', bridge: '是非題', detect: '題組／閱讀測驗', ...Object.fromEntries(Object.entries(BEST).map(([k, v]) => [k, `選擇題・最常配${v}`])) };
+for (const id of ['bomb', 'race', 'gacha', 'rocket', 'fish', 'boss']) FOR[id] = '選擇題・國語字音字形';
 const SIX_CATS = ['同音字', '形近字', '字音／多音', '選詞填句'];
 const fitsG = (g, q) => !g.fits || g.fits(q);
 // 依科目、題型挑最適合的遊戲，一半機會換別的（同一種不連續出現）
@@ -1345,6 +1348,13 @@ function showSetup() {
   $('#qn').textContent = 0; $('#qt').textContent = '–'; $('#score').textContent = 0;
   attract(); renderSetup();
 }
+// 指定遊戲時只依題型篩題，不限科目；說明照實寫
+function gameNote(g, n, unitWord) {
+  if (g.fits) return `指定「${g.name}」：只出國語的同音字、形近字、字音／多音、選詞填句（四個短選項的題目），共 ${n} ${unitWord}。`;
+  const kind = { tf: '是非題', mc: '選擇題', group: '題組' }[KIND_OF(g)], subj = ((BEST[g.id] || '').match(/國語|數學|自然|社會/) || [])[0];
+  const hint = KIND_OF(g) === 'mc' && subj && sel.subject !== subj ? `（這個遊戲最適合${BEST[g.id]}的題目，只想練${subj}就把科目選「${subj}」）` : '';
+  return `指定「${g.name}」：會出這個範圍${sel.subject === '全部' ? '所有科目' : sel.subject}的${kind}，共 ${n} ${unitWord}${hint}。`;
+}
 async function renderSetup() {
   const S = $('#setup'); S.hidden = false;
   const grades = INDEX.grades.map(g => g.name);
@@ -1383,7 +1393,7 @@ async function renderSetup() {
   if (!ok || !$('#avail')) return;
   const n = filtered(false).length, nw = filtered(true).length, g = ALL.find(g => g.id === sel.game);
   const unitWord = kindOf() === 'group' ? '組' : '題';
-  $('#avail').textContent = n ? (g ? `指定「${g.name}」：只出${FOR[g.id].split('・')[0]}，這個範圍有 ${n} ${unitWord}。` : `這個範圍有 ${n} ${unitWord}，每題依科目和題型挑遊戲。`) : '這個範圍沒有這種題目，換個題型或單元看看。';
+  $('#avail').textContent = n ? (g ? gameNote(g, n, unitWord) : `這個範圍有 ${n} ${unitWord}，每題依科目和題型挑遊戲。`) : '這個範圍沒有這種題目，換個題型或單元看看。';
   $('#start').disabled = !n; $('#startWrong').disabled = !nw; $('#startWrong').textContent = `只練錯題（${nw}）`;
 }
 function attract() {
