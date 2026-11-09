@@ -11,8 +11,7 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const { esc, store } = KR; // common.js
 const U = v => v + 'cqw';
 const at = (e, x, y) => { e.style.left = U(x); e.style.top = U(y); return e; };
 const size = (e, w, h) => { e.style.width = U(w); e.style.height = U(h); return e; };

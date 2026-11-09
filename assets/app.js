@@ -3,19 +3,14 @@
    data/index.json 由 tools/build-index.mjs 自動產生。版面沿用「讀一課」複習小書的樣式。 */
 
 const $ = s => document.querySelector(s);
-const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const { store, esc } = KR;
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const DEFAULT_CAT = { mc: '選擇', tf: '是非', fix: '改錯字', group: '題組' };
 const catOf = q => q.cat || DEFAULT_CAT[q.type];
 const ALL = '混合';
 const ROUND_SIZES = [10, 20, 0];
 
-const store = {
-  get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { } },
-};
-let wrongBook = new Set(store.get('kr-wrong-v1', []));
-const saveWrong = () => store.set('kr-wrong-v1', [...wrongBook]);
+// 錯題本在 common.js（KR.wrong），和其他頁面共用
 
 let INDEX = null;
 const unitCache = new Map();
@@ -25,11 +20,10 @@ let run = null;
 let confirmClear = false;
 
 /* ---------- 資料 ---------- */
-const dataUrl = file => 'data/' + file.split('/').map(encodeURIComponent).join('/');
 const baseName = f => f.split('/').pop().replace(/\.json$/, '');
 function loadUnit(meta) {
   if (!unitCache.has(meta.file)) {
-    unitCache.set(meta.file, fetch(dataUrl(meta.file)).then(r => { if (!r.ok) throw Error(meta.file); return r.json(); }).then(u => {
+    unitCache.set(meta.file, KR.loadUnitFile(meta.file).then(u => {
       u.meta = meta;
       // 抽題單位：一般題目一題一個；題組整組一起抽
       u.draws = (u.questions || []).map((q, i) => {
@@ -194,7 +188,8 @@ async function startRound(kind = 'normal') {
   confirmClear = false;
   let draws;
   if (kind === 'wrong') {
-    draws = (await drawPool('mix')).map(d => d.filter(q => wrongBook.has(q.key))).filter(d => d.length);
+    const w = KR.wrong.all();
+    draws = (await drawPool('mix')).map(d => d.filter(q => w.has(q.key))).filter(d => d.length);
     draws = shuffle(draws);
   } else if (kind === 'exam') {
     const pool = await drawPool('mix'), plan = examPlan();
@@ -216,7 +211,8 @@ async function startRound(kind = 'normal') {
 }
 async function wrongCount() {
   const us = await practiceUnits();
-  return us.flatMap(u => u.draws.flat()).filter(q => wrongBook.has(q.key)).length;
+  const w = KR.wrong.all();
+  return us.flatMap(u => u.draws.flat()).filter(q => w.has(q.key)).length;
 }
 async function renderPractice() {
   const meta = state.unit === ALL ? null : unitMeta();
@@ -241,7 +237,7 @@ async function renderPractice() {
     <div class="exam-filters" role="group" aria-label="每回題數">${ROUND_SIZES.map(n => `<button data-size="${n}" aria-pressed="${practice.size === n}">${n ? `每回 ${n} 題` : '全部題目'}</button>`).join('')}</div>
     <p class="exam-format-note">${run.kind === 'exam' ? `模擬考依考卷題型出題：${esc(planDesc)}。` : '選好後按「確認答案」才判分；改錯字點了就判分。'}切換題型或題數會重新開始一回。</p>
     ${body}
-    <div class="math-local-note"><p>此範圍錯題本：${wc} 題</p>${wc && run.kind !== 'wrong' ? '<button class="text-button" data-round="wrong">改練錯題</button>' : ''}${wrongBook.size ? (confirmClear ? ' <span class="clear-confirm">確定要清空全部錯題嗎？ <button class="text-button" id="clearWrongYes">確定清空</button> <button class="text-button" id="clearWrongNo">取消</button></span>' : ' <button class="text-button" id="clearWrong">清空全部錯題</button>') : ''}<small>錯題只存在這台裝置的瀏覽器，不會上傳。答對一次就會從錯題本移除。</small></div>`;
+    <div class="math-local-note"><p>此範圍錯題本：${wc} 題</p>${wc && run.kind !== 'wrong' ? '<button class="text-button" data-round="wrong">改練錯題</button>' : ''}${KR.wrong.all().size ? (confirmClear ? ' <span class="clear-confirm">確定要清空全部錯題嗎？ <button class="text-button" id="clearWrongYes">確定清空</button> <button class="text-button" id="clearWrongNo">取消</button></span>' : ' <button class="text-button" id="clearWrong">清空全部錯題</button>') : ''}<small>錯題只存在這台裝置的瀏覽器，不會上傳。答對一次就會從錯題本移除。</small></div>`;
   document.title = `${title}｜${state.subject}練習・${state.grade}`;
 }
 function questionMarkup() {
@@ -316,8 +312,8 @@ function finishMarkup(wc) {
 }
 function record(q, ok, yours, right) {
   run.responses.push({ q, ok, cat: q.cat, yours, right });
-  if (ok) { run.score++; wrongBook.delete(q.key); } else wrongBook.add(q.key);
-  saveWrong();
+  if (ok) run.score++;
+  KR.wrong.mark(q.key, !ok);
   run.submitted = true;
 }
 function submit() {
@@ -372,7 +368,7 @@ document.addEventListener('click', e => {
   // 不用 window.confirm()：Artifact 沙盒會擋掉，改成頁面內確認
   if (b.id === 'clearWrong') { confirmClear = true; return renderPractice(); }
   if (b.id === 'clearWrongNo') { confirmClear = false; return renderPractice(); }
-  if (b.id === 'clearWrongYes') { confirmClear = false; wrongBook.clear(); saveWrong(); return renderPractice(); }
+  if (b.id === 'clearWrongYes') { confirmClear = false; KR.wrong.clear(); return renderPractice(); }
   if (!run) return;
   if (d.filter) { practice.filter = d.filter; return startRound('normal'); }
   if (d.size !== undefined) { practice.size = Number(d.size); store.set('kr-round', practice.size); return startRound(run.kind === 'exam' ? 'normal' : run.kind); }
@@ -425,7 +421,7 @@ document.addEventListener('keydown', e => {
 (async () => {
   if (store.get('kr-large', false)) { document.body.classList.add('large-type'); $('#fontToggle').setAttribute('aria-pressed', 'true'); }
   try {
-    INDEX = await fetch('data/index.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw Error('data/index.json'); return r.json(); });
+    INDEX = await KR.loadIndex();
     const title = INDEX.config.siteTitle || '學習複習小書';
     $('#brandTitle').innerHTML = `讀一課<span>${esc(title)}</span>`;
     $('#introEyebrow').textContent = `${INDEX.grades.map(g => g.name.replace('年級', '')).join('・')}年級｜線上閱讀版 · 共 ${INDEX.totalQuestions} 題`;

@@ -670,21 +670,12 @@ let qi = 0, score = 0, phase = 'setup', q = null, spyIdx = -1;
 let log = [];
 
 /* ---------- 題庫：讀 data/index.json，找出有改錯字題的國語單元 ---------- */
-const store = {
-  get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { } },
-};
-const wrongBook = () => new Set(store.get('kr-wrong-v1', []));
-function markWrong(key, wrong) {
-  const w = wrongBook();
-  if (wrong) w.add(key); else w.delete(key);
-  store.set('kr-wrong-v1', [...w]);
-}
+// 本機儲存、錯題本、讀題庫都在 common.js（KR），和其他頁面共用
+const store = KR.store, wrongBook = KR.wrong.all, markWrong = KR.wrong.mark;
 const SUBJECT = '國語', FIX = '改錯字';
-const dataUrl = file => 'data/' + file.split('/').map(encodeURIComponent).join('/');
 const unitCache = new Map();
 function loadUnit(meta, grade) {
-  if (!unitCache.has(meta.file)) unitCache.set(meta.file, fetch(dataUrl(meta.file)).then(r => { if (!r.ok) throw Error(meta.file); return r.json(); }).then(u =>
+  if (!unitCache.has(meta.file)) unitCache.set(meta.file, KR.loadUnitFile(meta.file).then(u =>
     (u.questions || []).map((x, i) => ({ ...x, key: `${meta.file}#${i}` })).filter(x => x.type === 'fix' && [...x.sentence].includes(x.wrong))
       .map(x => ({ key: x.key, sentence: x.sentence, wrong: x.wrong, correct: x.correct, options: x.options, why: x.why || '', src: `${grade} ${meta.title}` }))));
   return unitCache.get(meta.file);
@@ -695,7 +686,7 @@ const fixUnits = grade => (INDEX.grades.find(g => g.name === grade)?.subjects.fi
 const gradesWithFix = () => INDEX.grades.map(g => g.name).filter(g => fixUnits(g).length);
 const inTerm = u => !setup.term || u.term === setup.term;
 const fixCount = units => units.reduce((n, u) => n + (u.cats[FIX] || 0), 0);
-const escH = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const escH = KR.esc;
 
 function renderSetup() {
   const grades = gradesWithFix();
@@ -909,5 +900,5 @@ document.addEventListener('click', e => {
   if (e.target.id === 'next') { qi++; if (qi >= order.length) return summary(); startQuestion(); stage.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
   if (e.target.id === 'again') { showSetup(); $('#setupPanel').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' }); }
 });
-fetch('data/index.json').then(r => r.json()).then(ix => { INDEX = ix; showSetup(); })
+KR.loadIndex().then(ix => { INDEX = ix; showSetup(); })
   .catch(() => { $('#mission').textContent = '題庫讀取失敗，請重新整理頁面。'; });
