@@ -1367,7 +1367,7 @@ async function renderSetup() {
   const chips = (key, vals, lab) => `<div class="row"><span class="lab">${lab}</span>${vals.map(([v, t]) => `<button type="button" class="opt" data-k="${key}" data-v="${esc(v)}" aria-pressed="${String(sel[key]) === String(v)}">${esc(t)}</button>`).join('')}</div>`;
   const pair = a => a.map(v => [v, v]);
   S.innerHTML = `<h2>選好範圍就開始！每種題型有自己的遊戲</h2>
-    <p class="small">想練改錯字？到 <a href="spy.html">🕵️ 找出間諜</a>。</p>
+    <p class="small">想闖關打魔王？到 <a href="cave.html">⛏️ 洞穴大冒險</a>。想練改錯字？到 <a href="spy.html">🕵️ 找出間諜</a>。</p>
     ${chips('grade', pair(grades), '年級')}
     ${terms.length > 1 ? chips('term', [['', '全部'], ...pair(terms)], '範圍') : ''}
     ${chips('subject', pair(['全部', ...SUBJECTS]), '科目')}
@@ -1377,7 +1377,7 @@ async function renderSetup() {
     <div class="row"><span class="lab">遊戲</span><button type="button" class="opt" data-k="game" data-v="隨機" aria-pressed="${sel.game === '隨機'}">隨機</button>${ALL.map(g => `<button type="button" class="opt" data-k="game" data-v="${g.id}" aria-pressed="${sel.game === g.id}">${g.name}</button>`).join('')}</div>
     <p class="small" id="avail">題目讀取中…</p>
     <div class="row"><button type="button" class="go" id="start" disabled>開始玩</button><button type="button" class="opt" id="startWrong" disabled>只練錯題</button></div>
-    <div class="games">${ALL.map(g => `<div><b>${g.name}</b><span class="for">${FOR[g.id]}</span>${g.how || '怪獸出現！隨機要選砲彈、武器或勇者去攻擊。'}</div>`).join('')}<a class="spylink" href="spy.html"><b>🕵️ 找出間諜</b><span class="for">國語改錯字</span>隊員舉牌排成句子，找出舉錯字的間諜。點這裡進入 →</a></div>
+    <div class="games">${ALL.map(g => `<div><b>${g.name}</b><span class="for">${FOR[g.id]}</span>${g.how || '怪獸出現！隨機要選砲彈、武器或勇者去攻擊。'}</div>`).join('')}<a class="spylink" href="cave.html"><b>⛏️ 洞穴大冒險</b><span class="for">是非・選擇，闖四關打魔王</span>闖過四個洞穴關卡收集寶石，最後答對題目打倒洞穴大魔王。點這裡進入 →</a><a class="spylink" href="spy.html"><b>🕵️ 找出間諜</b><span class="for">國語改錯字</span>隊員舉牌排成句子，找出舉錯字的間諜。點這裡進入 →</a></div>
     <p class="small">題目來自複習小書的題庫。選完會先播一段動畫，閃光之後才揭曉；答錯的題目會收進錯題本，和複習小書共用。</p>`;
   S.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
     const k = b.dataset.k; sel[k] = k === 'n' ? +b.dataset.v : b.dataset.v;

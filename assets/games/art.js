@@ -691,8 +691,8 @@ function pixShaded(rows, pal, skip) {
     const K = '#1d1b2e';
     // 底盤與排障器
     P.rect(2, 22, 52, 3, K); P.rect(3, 23, 50, 1, '#3a3550');
-    for (let i = 0; i < 7; i++) P.rect(49 + i * .9, 24 + i, 6 - i * .8, 1, i % 2 ? '#8b8aa3' : '#5d5a77');
-    P.rect(48, 24, 1, 7, K);
+    for (let i = 0; i < 7; i++) P.rect(51 + i * .6, 24 + i, 5 - i * .6, 1, i % 2 ? '#8b8aa3' : '#5d5a77');
+    P.rect(51, 24, 1, 7, K);
     // 鍋爐（紅色圓筒，上亮下暗）
     const boil = ['#ff9a9a', '#ff6b6b', '#e8414f', '#e8414f', '#d6334a', '#d6334a', '#b42a3c', '#a12a3c', '#8a2034', '#7a1730'];
     P.rect(18, 11, 31, 12, K); boil.forEach((c, i) => P.rect(19, 12 + i, 29, 1, c));
@@ -710,20 +710,15 @@ function pixShaded(rows, pal, skip) {
     P.rect(5, 17, 8, 2, '#ffd166'); P.rect(6, 17, 6, 1, '#fff3c4');
     // 連結器
     P.rect(0, 22, 2, 3, K);
-    // 動輪三個＋後面小輪＋連桿
-    // 汽缸（前輪前方）與後轉向架支架
-    P.rect(44, 23, 7, 6, K); P.rect(45, 24, 5, 4, '#5d5a77'); P.rect(45, 24, 5, 1, '#a7a4c4'); P.rect(45, 27, 5, 1, '#3a3550');
-    P.rect(3, 24, 14, 2, K); P.rect(4, 24, 12, 1, '#3a3550');
-    // 車輪：鋼圈輪胎＋紅色輪心＋八根輪輻＋配重塊＋輪軸
-    const wheel = (cx, cy, r) => {
-      P.circ(cx, cy, r, K); P.circ(cx, cy, r - .8, '#a7a4c4'); P.circ(cx, cy, r - 1.7, '#d6334a'); P.circ(cx - .6, cy - .6, r - 2.6, '#e8414f');
-      for (let a = 0; a < 4; a++) { const t = a * Math.PI / 4 + Math.PI / 8; P.line(cx - Math.cos(t) * (r - 2), cy - Math.sin(t) * (r - 2), cx + Math.cos(t) * (r - 2), cy + Math.sin(t) * (r - 2), '#8a2034'); }
-      P.circ(cx, cy, 1.2, K); P.dot(cx, cy, '#d3d1e6');
-    };
-    wheel(9.5, 29.6, 4.3); [22, 32, 42].forEach(x => wheel(x, 28.5, 5.2));
-    // 連桿與主連桿（接到汽缸）
-    P.rect(22, 29, 21, 2, K); P.rect(22, 29, 21, 1, '#d3d1e6'); P.rect(42, 26, 4, 2, K); P.rect(42, 26, 4, 1, '#a7a4c4');
-    [22, 32, 42].forEach(x => { P.rect(x - 1, 28, 2, 3, K); P.dot(x, 29, '#ffd166'); });
+    // 車輪：手畫的點陣圓輪（不用程式畫圓，才不會歪）。動輪三個不重疊，底部都在最後一列＝踩在鐵軌上
+    const WPAL = { k: K, w: '#d3d1e6', a: '#a7a4c4', d: '#6b6880', R: '#e8414f', r: '#d6334a', S: '#8a2034', h: '#fff3c4' };
+    const BIG = ['...kkkkk...', '.kkwwwwwkk.', '.kwRRSRRak.', 'kwRSRSRSrak', 'kaRRSSSrrak', 'kaSSShSSSak', 'kaRrSSSrrak', 'kaRSrSrSrak', '.kdrrSrrdk.', '.kkdddddkk.', '...kkkkk...'];
+    const SMALL = ['..kkkkk..', '.kwwwwwk.', 'kwRRSRrak', 'kaRSSSrak', 'kaSShSSak', 'kaRSSSrak', 'kdrrSrrdk', '.kdddddk.', '..kkkkk..'];
+    const put = (rows, x0, y0) => rows.forEach((row, y) => [...row].forEach((ch, x) => { if (WPAL[ch]) P.dot(x0 + x, y0 + y, WPAL[ch]); }));
+    put(SMALL, 4, 25); [16, 28, 40].forEach(x => put(BIG, x, 23));
+    // 連桿：接在三個動輪的曲柄銷上（輪心下方）
+    P.rect(20, 30, 27, 2, K); P.rect(21, 30, 25, 1, '#d3d1e6');
+    [21, 33, 45].forEach(x => { P.rect(x - 1, 29, 3, 3, K); P.dot(x, 30, '#ffd166'); });
   }, 14);
   // 客車廂（38×26）：圓弧屋頂、四個車窗（有窗簾）、腰帶、兩組轉向架。輪子底部在最後一列
   const car = c => canvas(38, 26, P => {
@@ -733,8 +728,11 @@ function pixShaded(rows, pal, skip) {
     for (let x = 4; x < 34; x += 8) { P.rect(x, 5, 6, 6, K); P.rect(x + 1, 6, 4, 4, '#cfeeff'); P.rect(x + 1, 6, 4, 1, '#fffaf0'); P.dot(x + 1, 7, '#fffaf0'); P.dot(x + 4, 9, '#9fd4f5'); }
     P.rect(1, 13, 36, 2, '#fffaf0'); P.rect(1, 14, 36, 1, '#e6e1d3');
     P.rect(2, 19, 34, 2, K); P.rect(0, 19, 2, 2, K); P.rect(36, 19, 2, 2, K);
-    const bog = x => { P.rect(x - 1, 20, 12, 2, '#3a3550'); [x + 2, x + 8].forEach(cx => { P.circ(cx, 23, 2.8, K); P.circ(cx, 23, 1.8, '#5d5a77'); P.dot(cx, 23, '#d3d1e6'); }); };
-    bog(3); bog(24);
+    // 轉向架：每組兩個手畫的點陣小輪，底部在最後一列
+    const WP = { k: K, w: '#d3d1e6', a: '#8b8aa3', g: '#5d5a77', d: '#3a3550', h: '#fff3c4' };
+    const SW = ['..kkk..', '.kwwak.', 'kwggdak', 'kaghgdk', 'kagddak', '.kdddk.', '..kkk..'];
+    const bog = x => { P.rect(x - 1, 19, 17, 2, '#3a3550'); P.rect(x - 1, 19, 17, 1, '#5d5a77'); [x, x + 8].forEach(x0 => SW.forEach((row, y) => [...row].forEach((ch, dx) => { if (WP[ch]) P.dot(x0 + dx, 19 + y, WP[ch]); }))); };
+    bog(3); bog(20);
   });
   SP.cars = ['#ffd166', '#2f9e5b', '#b48cff', '#ff9b6b'].map(car);
   // 山洞：山（開口挖空、石頭拱門）＋洞裡的黑＋蓋在火車上的陰影，三張同尺寸，可以一起左右翻轉
