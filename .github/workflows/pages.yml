@@ -29,17 +29,14 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           mkdir _site
-          cp -r index.html spy.html games.html cave.html assets data _site/
-          # 每次更新都換新的版本號，避免平板／手機用到舊的程式檔而打不開
+          cp -r *.html assets data _site/
+          # 每次更新都換新的版本號，避免平板／手機用到舊的程式檔而打不開。
+          # 自動處理所有頁面裡的 assets/….js 和 assets/….css，新增頁面或檔案不用改這裡。
           v="${GITHUB_SHA::8}"
-          sed -i "s#assets/style.css\"#assets/style.css?v=$v\"#; s#assets/app.js\"#assets/app.js?v=$v\"#" _site/index.html
-          grep -q "app.js?v=$v" _site/index.html
-          sed -i "s#assets/spy.css\"#assets/spy.css?v=$v\"#; s#assets/spy.js\"#assets/spy.js?v=$v\"#; s#assets/people/people-sprites.js\"#assets/people/people-sprites.js?v=$v\"#; s#assets/people/people.js\"#assets/people/people.js?v=$v\"#" _site/spy.html
-          grep -q "spy.js?v=$v" _site/spy.html
-          sed -i "s#assets/games/games.css\"#assets/games/games.css?v=$v\"#; s#assets/games/art.js\"#assets/games/art.js?v=$v\"#; s#assets/games/games-core.js\"#assets/games/games-core.js?v=$v\"#; s#assets/games/games.js\"#assets/games/games.js?v=$v\"#; s#assets/people/people-sprites.js\"#assets/people/people-sprites.js?v=$v\"#; s#assets/people/people.js\"#assets/people/people.js?v=$v\"#" _site/games.html
-          grep -q "games.js?v=$v" _site/games.html
-          sed -i "s#assets/games/games.css\"#assets/games/games.css?v=$v\"#; s#assets/games/art.js\"#assets/games/art.js?v=$v\"#; s#assets/games/games-core.js\"#assets/games/games-core.js?v=$v\"#; s#assets/cave/cave.css\"#assets/cave/cave.css?v=$v\"#; s#assets/cave/cave-art.js\"#assets/cave/cave-art.js?v=$v\"#; s#assets/cave/cave.js\"#assets/cave/cave.js?v=$v\"#; s#assets/people/people-sprites.js\"#assets/people/people-sprites.js?v=$v\"#; s#assets/people/people.js\"#assets/people/people.js?v=$v\"#" _site/cave.html
-          grep -q "cave.js?v=$v" _site/cave.html
+          for f in _site/*.html; do
+            sed -i -E "s#((src|href)=\"assets/[^\"?]+\.(js|css))\"#\\1?v=$v\"#g" "$f"
+            if grep -Eq '(src|href)="assets/[^"?]+\.(js|css)"' "$f"; then echo "::error::$f 還有沒加版本號的檔案"; exit 1; fi
+          done
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:
