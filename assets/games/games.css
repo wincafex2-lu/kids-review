@@ -200,6 +200,8 @@ svg.ov { inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: vi
 .games { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px }
 .games div { border: 3px solid var(--ink); background: #fff; padding: 8px 10px; font-size: 15px; line-height: 1.5 }
 .games b { display: block; font-size: 17px }
+.games .spylink { display: block; border: 3px solid var(--ink); background: var(--gold); padding: 8px 10px; font-size: 15px; line-height: 1.5; color: var(--ink); text-decoration: none; box-shadow: 0 3px 0 var(--ink) }
+.games .spylink:hover { background: #ffe08a }
 .small { font-size: 14px; color: var(--muted) }
 .wrongs { margin: 0; padding-left: 1.2em; display: grid; gap: 4px }
 @media (prefers-reduced-motion: reduce) { .picking .tag, .picking .coin, .picking .shadow, .rays, .s-fish .wave, .monster.idle { animation: none } }
