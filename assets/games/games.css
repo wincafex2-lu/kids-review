@@ -1,0 +1,354 @@
+/* 最後一刻揭曉：是非・選擇・題組的十種小遊戲。點陣圖都是程式畫的原創圖。 */
+/* 版面：像素遊樂場。上方題目牌、中間 16:10 舞台（每題換一個小遊戲）、下方解說。和「找出間諜」同一套夜色外框，刻意單一配色。
+   舞台座標一律用 cqw：寬 100、高 62.5。 */
+:root {
+  --night: #1d1b2e;
+  --frame: #46426e;
+  --paper: #fffaf0;
+  --ink: #1d1b2e;
+  --muted: #5d5a77;
+  --hot: #ff7a1a;
+  --bad: #d6334a;
+  --ok: #2f9e5b;
+  --gold: #ffd166;
+  --font: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --pixel: "Press Start 2P", "Courier New", monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+html, body { background: var(--night); color: var(--ink) }
+body { font-family: var(--font); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 32px; font-size: 18px; line-height: 1.7 }
+.wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 14px }
+button { font: inherit; cursor: pointer; color: inherit }
+button:focus-visible { outline: 3px solid var(--hot); outline-offset: 3px }
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; color: var(--paper) }
+.brand h1 { margin: 0; font-size: 26px; font-weight: 900; letter-spacing: .12em; text-wrap: balance }
+.brand small { display: block; font-size: 13px; color: #b9b6d8; letter-spacing: .06em; font-weight: 500 }
+.hud { display: flex; gap: 8px; align-items: center; flex-wrap: wrap }
+.chip { font-family: var(--pixel); font-size: 12px; padding: 8px 10px; background: #2e2b4a; border: 2px solid var(--frame); color: var(--paper); line-height: 1.4; font-variant-numeric: tabular-nums }
+.chip b { color: var(--gold); font-weight: 400 }
+.mute { background: #2e2b4a; border: 2px solid var(--frame); color: var(--paper); padding: 4px 10px; font-size: 18px }
+.qcard { background: var(--paper); border: 3px solid var(--ink); box-shadow: 0 5px 0 #000; padding: 10px 16px; display: grid; gap: 2px }
+.qcard .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 13px; color: var(--muted); font-weight: 700 }
+.qcard .meta .game { color: var(--hot) }
+.qcard .q { margin: 0; font-size: 22px; font-weight: 900; line-height: 1.5; text-wrap: balance; white-space: pre-line }
+.qcard .how { margin: 0; font-size: 15px; color: var(--muted); font-weight: 700 }
+
+.stage { position: relative; container-type: inline-size; aspect-ratio: 16 / 10; max-width: 100%; overflow: hidden; border: 4px solid var(--night); outline: 4px solid var(--frame); user-select: none; -webkit-user-select: none; background: #78c3f0 }
+.scene { position: absolute; inset: 0; transform-origin: 50% 50%; background-size: 100% 100%; image-rendering: pixelated }
+.scene > * { position: absolute }
+.stage.shake .scene { animation: shake .5s steps(2) 1 }
+@keyframes shake { 0%,100% { translate: 0 0 } 20% { translate: -1.2cqw .6cqw } 40% { translate: 1.2cqw -.8cqw } 60% { translate: -.8cqw -.4cqw } 80% { translate: .8cqw .8cqw } }
+.px { image-rendering: pixelated; image-rendering: crisp-edges; display: block; pointer-events: none }
+svg.ov { inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible }
+
+/* 可點的字牌 */
+.tag { display: grid; place-items: center; min-width: 9cqw; height: 9cqw; padding: 0 1.2cqw; background: var(--paper); border: .6cqw solid var(--ink); box-shadow: 0 .8cqw 0 var(--ink); font-weight: 900; font-size: 5.4cqw; line-height: 1; translate: -50% -50%; transition: scale .12s, background .12s, opacity .3s; z-index: 15; white-space: nowrap }
+.tag.mid { font-size: 3.4cqw; height: 7.6cqw }
+.tag.long { font-size: 2.3cqw; height: 7cqw }
+.tag:hover { background: #fff3c4 }
+.tag:active { scale: .94 }
+.picking .tag { animation: bob 1.4s ease-in-out infinite }
+.picking .tag:nth-of-type(2n) { animation-delay: -.7s }
+@keyframes bob { 50% { transform: translateY(-.9cqw) } }
+.tag.chosen { background: var(--gold); animation: none }
+.tag.dim, .coin.dim { opacity: .3 }
+.locked .tag, .locked .coin { pointer-events: none }
+
+/* 揭曉前的閃光 */
+.fx-flash { inset: 0; z-index: 60; pointer-events: none; background: radial-gradient(circle at 50% 50%, #fff 0 20%, rgba(255,255,255,.9) 40%, rgba(255,240,180,.75) 70%, rgba(255,209,102,.5)) }
+.fx-rays { left: 50%; top: 50%; width: 160cqw; height: 160cqw; translate: -50% -50%; z-index: 61; pointer-events: none; background: repeating-conic-gradient(rgba(255,255,255,.95) 0 6deg, rgba(255,255,255,0) 6deg 18deg); border-radius: 50% }
+.stamp { left: 50%; top: 44%; z-index: 70; translate: -50% -50%; rotate: -8deg; padding: 1.4cqw 3.4cqw; border: 1cqw solid currentColor; background: var(--paper); font-weight: 900; font-size: 7.4cqw; letter-spacing: .1em; white-space: nowrap; box-shadow: 0 1.2cqw 0 rgba(0,0,0,.35); animation: stampIn .35s cubic-bezier(.2,1.6,.4,1) both }
+.stamp.ok { color: var(--ok) } .stamp.bad { color: var(--bad) }
+@keyframes stampIn { from { scale: 2.4; opacity: 0 } }
+.flash { inset: 0; background: #fff; z-index: 50; pointer-events: none; animation: flash .7s ease-out forwards }
+@keyframes flash { to { opacity: 0 } }
+.confetti { top: -3cqw; width: 1.4cqw; height: 2cqw; z-index: 65; pointer-events: none }
+.big { left: 50%; top: 40%; translate: -50% -50%; font-family: var(--pixel); font-size: 14cqw; color: var(--paper); text-shadow: .8cqw .8cqw 0 var(--ink); z-index: 40; pointer-events: none }
+.part { z-index: 30; pointer-events: none }
+.puff { border-radius: 50%; z-index: 12; pointer-events: none; translate: -50% -50% }
+.bubble { z-index: 25; translate: -50% -100%; background: var(--paper); border: .5cqw solid var(--ink); padding: .2cqw 1.2cqw; font-weight: 900; font-size: 3.4cqw; white-space: nowrap; pointer-events: none }
+.bubble::after { content: ""; position: absolute; left: 50%; bottom: -1.6cqw; border: .8cqw solid transparent; border-top-color: var(--ink); translate: -50% 0 }
+.sweat { z-index: 9; width: 1.6cqw; height: 2.4cqw; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #8ccdf3; border: .3cqw solid #1d1b2e; animation: sweat .6s ease-in infinite }
+@keyframes sweat { from { transform: translateY(0); opacity: 1 } to { transform: translateY(3cqw); opacity: 0 } }
+.actor { z-index: 8; translate: -50% -100% }
+.actor img { width: 100%; height: 100% }
+
+/* 1 拆炸彈 */
+.s-bomb { background-color: #3a3550 }
+.wire { fill: none; stroke-width: 1.7; stroke-linecap: round }
+.bomb { left: 6cqw; top: 12.4cqw; width: 26.25cqw; height: 28.75cqw; z-index: 5 }
+.bomb > img { width: 100%; height: 100% }
+.bomb .lcd { position: absolute; left: 50%; top: 58%; translate: -50% -50%; padding: .8cqw 1.4cqw; background: #120808; border: .6cqw solid #5d5a77; font-family: var(--pixel); font-size: 3.4cqw; color: #ff4141; text-shadow: 0 0 1.4cqw #ff2020; letter-spacing: .1em; font-variant-numeric: tabular-nums; white-space: nowrap }
+.bomb .lcd.safe { color: #57f287; text-shadow: 0 0 1.4cqw #2ecc71 }
+.bomb .led { position: absolute; right: 6cqw; top: 9cqw; width: 2.2cqw; height: 2.2cqw; border-radius: 50%; background: #ff3b3b; box-shadow: 0 0 1.6cqw #ff3b3b; animation: blink 1s steps(1) infinite }
+.bomb .led.fast { animation-duration: .2s }
+.bomb .led.safe { background: #57f287; box-shadow: 0 0 1.6cqw #57f287; animation: none }
+@keyframes blink { 50% { opacity: .15 } }
+.spark { width: 2cqw; height: 2cqw; z-index: 6; translate: -50% -50%; background: radial-gradient(circle, #fff 0 20%, #ffd166 40%, #ff7a1a 60%, transparent 70%); animation: spark .12s steps(2) infinite }
+@keyframes spark { 50% { scale: 1.6 } }
+.board { left: 88cqw; top: 9cqw; width: 6.25cqw; height: 40cqw; z-index: 2 }
+.scissors { font-size: 7cqw; z-index: 20; translate: -50% -50%; pointer-events: none; line-height: 1 }
+.ring { border-radius: 50%; translate: -50% -50%; border: 1.4cqw solid #fff3c4; z-index: 45; pointer-events: none }
+.fireball { border-radius: 50%; translate: -50% -50%; background: radial-gradient(circle, #fff 0 12%, #ffd166 28%, #ff7a1a 50%, #d6334a 68%, rgba(214,51,74,0) 72%); z-index: 44; pointer-events: none }
+.soot { inset: 0; z-index: 43; pointer-events: none; background: radial-gradient(circle at 19% 45%, rgba(20,16,30,.0) 0 10%, rgba(20,16,30,.55) 60%) }
+
+/* 2 賽馬 */
+.s-race { background-color: #c98a4b }
+.s-race .rail-unused { left: 0; right: 0; top: 11cqw; height: 1cqw; background: repeating-linear-gradient(90deg, #fffaf0 0 1cqw, transparent 1cqw 5cqw); z-index: 2 }
+.lane { left: 0; right: 0; height: 11.4cqw; border-bottom: .5cqw dashed rgba(255,255,255,.45) }
+.finish { top: 12cqw; bottom: 0; left: 86cqw; width: 2.2cqw; background: repeating-conic-gradient(#121019 0 25%, #fffaf0 0 50%) 0 0 / 2.2cqw 2.2cqw; z-index: 1 }
+.gatebar { top: 12cqw; bottom: 0; left: 22cqw; width: 1.6cqw; background: #e8414f; border-inline: .4cqw solid #121019; z-index: 9 }
+.horse { width: 13cqw; height: 9cqw; translate: -100% -100%; z-index: 6 }
+.horse img { width: 100%; height: 100% }
+.horse .bib { position: absolute; left: 3.6cqw; top: -2.8cqw; min-width: 4cqw; padding: 0 .6cqw; background: var(--paper); border: .4cqw solid var(--ink); font-weight: 900; font-size: 2.6cqw; line-height: 1.3; white-space: nowrap; text-align: center }
+.horse.mid .bib { font-size: 1.9cqw }
+.horse.mine .bib { background: var(--gold) }
+.horse .crown { position: absolute; left: 8cqw; top: -8cqw; font-size: 5cqw; line-height: 1 }
+.lamp { top: 1.6cqw; width: 2.6cqw; height: 2.6cqw; border-radius: 50%; background: #3a3550; border: .4cqw solid var(--ink); z-index: 20 }
+.lamp.red { background: #ff4141; box-shadow: 0 0 1.4cqw #ff4141 } .lamp.green { background: #57f287; box-shadow: 0 0 1.4cqw #57f287 }
+.commentary { left: 50%; bottom: 1cqw; translate: -50% 0; z-index: 30; background: var(--ink); color: var(--paper); padding: .3cqw 2cqw; font-weight: 900; font-size: 2.6cqw; white-space: nowrap }
+.photo { inset: 0; z-index: 48; border: 2cqw solid #fffaf0; box-shadow: inset 0 0 0 .6cqw var(--ink); pointer-events: none }
+.photo::after { content: "PHOTO"; position: absolute; left: 1.4cqw; top: 1cqw; font-family: var(--pixel); font-size: 2cqw; color: #ff4141 }
+
+/* 3 扭蛋機 */
+.s-gacha { background-color: #ffe0ec }
+.machine { left: 35cqw; top: 2cqw; width: 30cqw; z-index: 4 }
+.dome { position: relative; width: 30cqw; height: 25cqw }
+.dome .glass { position: absolute; inset: 0 0 2.4cqw; border-radius: 15cqw 15cqw 0 0; overflow: hidden; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), rgba(200,230,255,.3) 60%, rgba(160,200,240,.35)) }
+.dome > img { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2 }
+.ball { position: absolute; width: 6cqw; height: 6cqw; border-radius: 50%; border: .5cqw solid var(--ink); background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.8) 0 10%, transparent 12%), linear-gradient(var(--c) 0 50%, #fffaf0 50%) }
+.mbody { position: relative; height: 21.25cqw }
+.mbody > img:first-child { width: 100%; height: 100% }
+.knob { position: absolute; left: 3.6cqw; top: 1.6cqw; width: 9.4cqw; height: 9.4cqw }
+.coin { width: 11cqw; height: 11cqw; border-radius: 50%; translate: -50% -50%; z-index: 15; display: grid; place-items: center; border: .6cqw solid #7a4e00; background: radial-gradient(circle at 35% 30%, #fff3c4 0 10%, #ffd166 30%, #f0a800 75%); box-shadow: inset 0 0 0 1cqw #ffd166, inset 0 0 0 1.4cqw #c98a00, 0 .8cqw 0 #7a4e00; font-weight: 900; font-size: 5cqw; color: #7a4e00; text-shadow: 0 .2cqw 0 #fff3c4; line-height: 1; transition: opacity .3s }
+.coin.mid { font-size: 2.5cqw; white-space: nowrap; letter-spacing: -.1em } .coin.long { font-size: 1.9cqw; white-space: nowrap }
+.picking .coin { animation: bob 1.4s ease-in-out infinite }
+.picking .coin:nth-of-type(2n) { animation-delay: -.7s }
+.coin:hover { filter: brightness(1.08) }
+.coin.chosen { animation: none }
+.capsule { width: 8cqw; height: 8cqw; z-index: 18; translate: -50% -50% }
+.capsule .top, .capsule .bot { position: absolute; left: 0; width: 100%; height: 50%; border: .55cqw solid var(--ink) }
+.capsule .top { top: 0; border-radius: 4cqw 4cqw 0 0; background: radial-gradient(circle at 30% 35%, rgba(255,255,255,.75) 0 12%, transparent 14%), var(--c); border-bottom-width: .3cqw; transform-origin: 10% 100%; z-index: 2 }
+.capsule .bot { bottom: 0; border-radius: 0 0 4cqw 4cqw; background: linear-gradient(#fffaf0, #d9d3e6); border-top-width: .3cqw }
+.capsule .prize { position: absolute; left: 50%; top: 35%; translate: -50% -50%; scale: 0; font-size: 5cqw; z-index: 1; white-space: nowrap; line-height: 1 }
+.slip { z-index: 30; translate: -50% -50%; background: #fffaf0; border: .5cqw solid var(--ink); padding: .6cqw 2.4cqw; font-weight: 900; font-size: 4cqw; white-space: nowrap; color: var(--muted) }
+.rays { left: 50%; top: 50%; width: 80cqw; height: 80cqw; translate: -50% -50%; background: repeating-conic-gradient(rgba(255,209,102,.8) 0 10deg, transparent 10deg 20deg); border-radius: 50%; z-index: 16; animation: spin 6s linear infinite; pointer-events: none }
+@keyframes spin { to { rotate: 360deg } }
+
+/* 4 火箭 */
+.s-rocket { background-color: #141226 }
+.star { width: .6cqw; height: .6cqw; background: #fffaf0; opacity: .8 }
+.s-rocket.warp .star { animation: warp .35s linear infinite }
+@keyframes warp { from { transform: translateY(-20cqw) scaleY(6) } to { transform: translateY(70cqw) scaleY(6) } }
+.pad { bottom: 9.6cqw; translate: -50% 0; z-index: 4 }
+.tower { bottom: 10cqw; z-index: 2 }
+.rocket { width: 8.4cqw; height: 11.4cqw; z-index: 7; transform-origin: 50% 50% }
+.rocket img { width: 100%; height: 100%; position: relative; z-index: 2 }
+.rocket .fire { position: absolute; left: 50%; top: 10.6cqw; width: 3.6cqw; height: 0; translate: -50% 0; border-radius: 0 0 2cqw 2cqw; background: linear-gradient(#fff 0 15%, #ffd166 35%, #ff7a1a 70%, rgba(255,122,26,0)); animation: flick .07s steps(2) infinite; z-index: 1 }
+@keyframes flick { 50% { scale: .75 1.1 } }
+.ptag { translate: -50% 0; z-index: 15 }
+.ptag .tag { position: relative; translate: none }
+
+/* 5 釣魚 */
+.s-fish { background-color: #2b7bb9 }
+.s-fish .wave { left: 24cqw; right: 0; top: 18.4cqw; height: .7cqw; background: repeating-linear-gradient(90deg, rgba(220,240,255,.8) 0 2cqw, transparent 2cqw 6cqw); animation: wave 2s linear infinite; z-index: 3 }
+@keyframes wave { to { background-position: 6cqw 0 } }
+.shadow { width: 17.5cqw; height: 7.5cqw; translate: -40% -50%; z-index: 4 }
+.shadow > img { width: 100%; height: 100% }
+.picking .shadow { animation: swim 3s ease-in-out infinite }
+.picking .shadow:nth-of-type(2n) { animation-delay: -1.5s }
+@keyframes swim { 50% { margin-left: 1.6cqw } }
+.shadow .tag { position: absolute; left: 40%; top: 50% }
+.catch { z-index: 14; translate: -50% 0; transform-origin: 50% 0 }
+.drop { width: 1.2cqw; height: 1.8cqw; border-radius: 50%; background: #8ccdf3; z-index: 16 }
+
+/* 6 打怪獸 */
+.s-boss { background-color: #2e2250 }
+.monster { left: 64cqw; top: 22cqw; width: 31cqw; height: 27cqw; z-index: 6; transform-origin: 50% 100% }
+.monster img { width: 100%; height: 100% }
+.monster.idle { animation: breathe 1.4s ease-in-out infinite }
+@keyframes breathe { 50% { scale: 1.03 .97 } }
+.hp { right: 5cqw; top: 3cqw; width: 30cqw; height: 3.6cqw; background: #2a2640; border: .6cqw solid var(--ink); z-index: 20 }
+.hp i { position: absolute; inset: 0; right: auto; width: 100%; background: linear-gradient(#ff6b6b, #d6334a); transition: width .35s steps(6) }
+.hp i.heal { background: linear-gradient(#57f287, #2f9e5b); transition: width 1s steps(10) }
+.hp b { position: absolute; left: 0; top: -3.6cqw; font-family: var(--pixel); font-size: 2cqw; color: var(--paper) }
+.item { width: 9cqw; height: 9cqw; translate: -50% -50%; z-index: 9; display: grid; place-items: center }
+.item img { width: 100% }
+.ball2 { width: 5.4cqw; height: 5.4cqw; border-radius: 50%; border: .5cqw solid var(--ink); background: radial-gradient(circle at 35% 30%, #fff 0 12%, var(--c) 30%) }
+.shot { z-index: 22; translate: -50% -50%; pointer-events: none }
+.dmg { z-index: 26; font-family: var(--pixel); font-size: 3.4cqw; color: var(--gold); text-shadow: .4cqw .4cqw 0 var(--ink); pointer-events: none }
+.slash { z-index: 24; width: 14cqw; height: 1.4cqw; background: #fff; border-radius: 1cqw; translate: -50% -50%; box-shadow: 0 0 2cqw #fff3c4; pointer-events: none }
+.heart { z-index: 24; font-size: 3cqw; color: #57f287; font-weight: 900; pointer-events: none }
+
+/* 解說、設定、結果 */
+.panel { background: var(--paper); border: 4px solid var(--night); outline: 4px solid var(--frame); padding: 16px 18px; display: grid; gap: 10px }
+.panel h2 { margin: 0; font-size: 22px; font-weight: 900; text-wrap: balance }
+.panel p { margin: 0 }
+.verdict.ok h2 { color: var(--ok) } .verdict.bad h2 { color: var(--bad) }
+.verdict .ans { font-size: 18px; font-weight: 700 }
+.verdict .ans b { font-size: 26px; color: var(--ok); padding: 0 4px }
+.verdict .why { color: var(--muted) }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.row .lab { font-weight: 900; min-width: 4.5em }
+.opt { background: #fff; border: 3px solid var(--ink); padding: 4px 14px; font-weight: 700; box-shadow: 0 3px 0 var(--ink) }
+.opt[aria-pressed="true"] { background: var(--gold) }
+.go { justify-self: start; background: var(--hot); color: #fff; border: 3px solid var(--ink); padding: 8px 26px; font-weight: 900; font-size: 20px; box-shadow: 0 4px 0 var(--ink); letter-spacing: .08em }
+.go:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink) }
+.go:disabled { opacity: .5; cursor: not-allowed }
+.games { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px }
+.games div { border: 3px solid var(--ink); background: #fff; padding: 8px 10px; font-size: 15px; line-height: 1.5 }
+.games b { display: block; font-size: 17px }
+.small { font-size: 14px; color: var(--muted) }
+.wrongs { margin: 0; padding-left: 1.2em; display: grid; gap: 4px }
+@media (prefers-reduced-motion: reduce) { .picking .tag, .picking .coin, .picking .shadow, .rays, .s-fish .wave, .monster.idle { animation: none } }
+@media (max-width: 520px) { .qcard .q { font-size: 19px } .brand h1 { font-size: 22px } }
+
+/* 題組文章 */
+.qcard .passage { margin: 4px 0; font-size: 16px; line-height: 1.85; background: #f4ecd8; border-left: 5px solid var(--hot); padding: 8px 12px; max-height: 260px; overflow: auto; font-weight: 500 }
+.games .for { display: inline-block; font-size: 12px; font-weight: 900; color: #fff; background: var(--frame); padding: 0 6px; margin-bottom: 2px }
+
+/* A OX 翻板 */
+.s-ox { background-color: #2a1f48 }
+.sign { z-index: 4 } .beam { z-index: 3; translate: -50% 0; transform-origin: 50% 0; transition: rotate .18s, opacity .3s; mix-blend-mode: screen }
+.trap { z-index: 5; transform-origin: 50% 0 } .front { z-index: 12 }
+.arrow { z-index: 14; translate: -50% 0; animation: bob 0.8s ease-in-out infinite }
+.oxbtn { min-width: 16cqw; height: 8cqw !important; font-size: 4cqw !important }
+.mud { filter: sepia(1) saturate(2.4) brightness(.55) hue-rotate(-14deg) }
+
+/* B 班會開票 */
+.s-vote { background-color: #e9e2c8 }
+.chalk { z-index: 4; translate: -50% 0; color: #fffaf0; font-weight: 900; font-size: 2.6cqw; line-height: 1; opacity: .92; text-shadow: 0 0 .3cqw rgba(255,255,255,.5) }
+.vcount { z-index: 4; translate: -50% 0; font-family: var(--pixel); font-size: 1.9cqw; color: #ffd166; line-height: 1 }
+.chalkov { z-index: 4 } .chalkov .stroke { stroke: #fffaf0; stroke-width: .75; stroke-linecap: square; opacity: .95; animation: chalk .22s ease-out both; stroke-dasharray: 7; stroke-dashoffset: 7 }
+@keyframes chalk { to { stroke-dashoffset: 0 } }
+.vcard { z-index: 15; translate: -50% 0; width: 18.4cqw; min-height: 9cqw; padding: .9cqw 1cqw 1cqw; background: var(--paper); border: .5cqw solid var(--ink); box-shadow: 0 .7cqw 0 var(--ink); font-weight: 900; font-size: 2.15cqw; line-height: 1.32; text-align: left; transition: background .15s, opacity .3s, scale .12s }
+.vcard i { display: block; font-style: normal; color: #fff; background: var(--hot); width: fit-content; padding: 0 .8cqw; margin-bottom: .4cqw; font-size: 1.9cqw }
+.vcard.long { font-size: 1.8cqw; line-height: 1.25 }
+.vcard:hover { background: #fff3c4 } .vcard:active { scale: .96 }
+.picking .vcard { animation: bob 1.4s ease-in-out infinite } .picking .vcard:nth-of-type(2n) { animation-delay: -.7s }
+.vcard.chosen { background: var(--gold); animation: none } .vcard.dim { opacity: .45 } .locked .vcard { pointer-events: none }
+.vcard.win { outline: .7cqw solid var(--ok); background: #e3f7e8 }
+.vbox { z-index: 10 } .ballotfly { z-index: 20; translate: -50% -50% }
+.slipv { z-index: 30; translate: -50% -50%; background: var(--paper); border: .5cqw solid var(--ink); padding: .4cqw 1.6cqw; font-weight: 900; font-size: 5cqw; white-space: nowrap; box-shadow: 0 .6cqw 0 rgba(0,0,0,.3) }
+.slipv.small { font-size: 2.6cqw; padding: .2cqw 1cqw }
+.rosette { z-index: 14; translate: -50% 0 }
+
+/* C 小偵探 */
+.s-detect { background-color: #24424a }
+.cluebar { z-index: 20; background: var(--ink); color: var(--paper); font-weight: 900; font-size: 2.3cqw; padding: .4cqw 1.2cqw; display: flex; gap: .8cqw; align-items: center; border: .4cqw solid #46426e }
+.cluebar b { display: inline-grid; place-items: center; width: 3.4cqw; height: 3.4cqw; background: #3a3550; color: #b9b6d8; font-size: 2cqw }
+.cluebar b.got { background: var(--gold); color: var(--ink) } .cluebar b.miss { background: var(--bad); color: #fff }
+.ecard { z-index: 15; translate: -50% -50%; width: 29cqw; min-height: 12.5cqw; display: grid; place-items: center; padding: 1.2cqw 1.6cqw; background: #fffaf0; border: .45cqw solid var(--ink); box-shadow: .6cqw .7cqw 0 rgba(0,0,0,.35); font-weight: 900; font-size: 2.3cqw; line-height: 1.35; text-align: center; transition: background .15s, opacity .3s, scale .3s }
+.ecard .pin { position: absolute; left: 50%; top: -1.4cqw; translate: -50% 0 }
+.ecard:hover { background: #fff3c4 }
+.picking .ecard { animation: bob 1.6s ease-in-out infinite } .picking .ecard:nth-of-type(2n) { animation-delay: -.8s }
+.ecard.chosen { background: #fff3c4; animation: none } .ecard.dim { opacity: .35 } .locked .ecard { pointer-events: none }
+.ecard.zoomed { scale: 1.08; z-index: 25 }
+.ecard.good { background: #fff3c4; outline: .7cqw solid var(--gold) } .ecard.hint { animation: hint .5s steps(2) 4 }
+@keyframes hint { 50% { outline-color: var(--ok) } }
+.emark { position: absolute; right: -1.6cqw; top: -2cqw; rotate: 10deg; padding: .1cqw 1cqw; font-size: 2.2cqw; border: .4cqw solid currentColor; background: var(--paper); animation: stampIn .3s cubic-bezier(.2,1.6,.4,1) both }
+.emark.ok { color: var(--bad) } .emark.bad { color: #5d5a77 }
+.lensE { z-index: 30; translate: -38% -38% } .cfile { z-index: 6 }
+.spot { inset: 0; z-index: 40; pointer-events: none; background: radial-gradient(ellipse 16cqw 22cqw at 50% 72%, rgba(255,243,196,.15) 0 60%, rgba(10,8,20,.82) 100%) }
+@media (prefers-reduced-motion: reduce) { .picking .vcard, .picking .ecard, .arrow { animation: none } }
+
+/* ===== 平板版面 ===== */
+html { -webkit-text-size-adjust: 100% }
+body { touch-action: manipulation; -webkit-tap-highlight-color: transparent }
+.wrap { max-width: 1180px }
+.play { position: relative; display: grid; justify-items: center; width: 100%; min-width: 0 }
+.stage { width: 100%; margin-inline: auto }
+.play > .verdict { justify-self: stretch; margin-top: 14px }
+body.tight .play > .verdict { margin-top: 0 }
+.opt { min-height: 46px; font-size: 17px; padding: 6px 14px }
+.go { min-height: 54px; font-size: 21px }
+.mute { min-width: 48px; min-height: 44px }
+.qcard .q { font-size: clamp(19px, 2.6vw, 26px) }
+.qcard .passage { font-size: clamp(16px, 2vw, 19px) }
+@media (min-width: 600px) {
+  body.tight .play .verdict { position: absolute; left: 50%; bottom: 14px; translate: -50% 0; width: min(92%, 680px); z-index: 100; box-shadow: 0 8px 0 rgba(0,0,0,.4); animation: sheet .32s cubic-bezier(.2,1.3,.4,1) both; max-height: 70%; overflow: auto }
+  @keyframes sheet { from { translate: -50% 40px; opacity: 0 } }
+  .verdict { padding: 14px 20px; gap: 6px } .verdict .ans b { font-size: 24px }
+}
+body.wide .wrap { grid-template-columns: minmax(270px, 330px) minmax(0, 1fr); align-items: start; column-gap: 18px }
+body.wide .top { grid-column: 1 / -1 }
+body.wide .qcard { grid-column: 1; grid-row: 2; max-height: calc(100dvh - 110px); overflow: auto }
+body.wide .play { grid-column: 2; grid-row: 2 }
+body.wide #setup { grid-column: 1 / -1 }
+.games { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)) }
+
+/* ===== 點陣紙張字卡 ===== */
+.pp { border: .9cqw solid transparent !important; border-image: var(--pp-frame) 3 / .9cqw round !important; background: var(--pp-tex) 0 0 / 2.5cqw 2.5cqw, #fffaf0; image-rendering: pixelated; box-shadow: none !important; filter: drop-shadow(.45cqw .55cqw 0 rgba(29,27,46,.5)) }
+.pp:hover { background-color: #fff3c4 }
+.pp.chosen { background-color: var(--gold) }
+.vcard.pp.win { outline: .7cqw solid var(--ok); background-color: #e3f7e8 }
+.ecard.pp.good { background-color: #fff3c4 }
+.lbl { z-index: 15; translate: -50% 0; padding: .5cqw .9cqw; font-weight: 900; line-height: 1.28; color: var(--ink); text-align: center; display: grid; place-items: center; min-height: 7.2cqw; transition: opacity .3s, scale .12s, background-color .15s; text-wrap: balance }
+.lbl.f1 { font-size: 4.2cqw } .lbl.f2 { font-size: 2.9cqw } .lbl.f3 { font-size: 2.35cqw } .lbl.f4 { font-size: 2cqw } .lbl.f5 { font-size: 1.75cqw; line-height: 1.22 }
+.lbl:active { scale: .95 }
+.picking .lbl { animation: bob 1.4s ease-in-out infinite } .picking .lbl:nth-of-type(2n) { animation-delay: -.7s }
+.lbl.chosen { animation: none } .lbl.dim { opacity: .35 } .locked .lbl { pointer-events: none }
+.lbl.note { background: var(--pp-line) 0 0 / 2.5cqw 2.5cqw, #fffdf3 }
+.lbl.env { background-color: #fff4e8 }
+.slipv.wrong { color: var(--bad); text-decoration: line-through }
+.fx { z-index: 30; pointer-events: none }
+.onair { z-index: 4 } .cam { z-index: 13 } .cam.flip { transform: scaleX(-1) }
+.desks { z-index: 14; pointer-events: none } .podium { z-index: 11 } .vbox { z-index: 12 }
+
+/* 獨木橋 */
+.s-bridge { background-color: #ffc98a }
+.ropes { z-index: 6 } .ropes path { fill: none; stroke: #5a3a20; stroke-width: .55; stroke-linejoin: round } .ropes path.hang { stroke-width: .3; stroke: #8a5a3c }
+.plank { z-index: 5 } .post { z-index: 6 } .flagp { z-index: 9; transform-origin: 0 100% }
+.tubeB { z-index: 7 } .waterF { z-index: 9; pointer-events: none } .tubeF { z-index: 10 }
+.ripple { z-index: 9; width: 14cqw; height: 2.4cqw; translate: -50% -50%; border: .4cqw solid rgba(220,240,255,.85); border-radius: 50%; pointer-events: none }
+
+/* 保險箱 */
+.s-safe { background-color: #2c3a4a }
+.safein { z-index: 3 } .sdoor { z-index: 5; transform-origin: 0 50% } .sdoor > * { position: absolute }
+.slcd { display: grid; place-items: center; background: #0c1a12; color: #57f287; font-family: var(--pixel), var(--font); font-size: 2cqw; white-space: nowrap; overflow: hidden; letter-spacing: .05em; text-shadow: 0 0 1cqw #2ecc71; font-weight: 900 }
+.slcd.bad { color: #ff4141; text-shadow: 0 0 1cqw #ff2020 } .slcd.ok { color: #ffd166 }
+.siren { z-index: 8 } .glow { z-index: 4; translate: -50% -50%; border-radius: 50%; background: radial-gradient(circle, rgba(255,243,196,.9), rgba(255,209,102,.4) 45%, transparent 70%); pointer-events: none }
+.redalert { inset: 0; z-index: 40; background: rgba(214,51,74,.28); pointer-events: none; animation: blink .25s steps(1) 12 forwards }
+.spring { height: 1.8cqw; translate: 0 -50%; z-index: 9; background: repeating-linear-gradient(90deg, #1d1b2e 0 .6cqw, #d3d1e6 .6cqw 1.25cqw) }
+.glove { z-index: 10 } .dizzy { z-index: 26; translate: -50% 0; color: var(--gold); font-size: 2.6cqw; text-shadow: .3cqw .3cqw 0 var(--ink); animation: bob .5s ease-in-out infinite }
+
+/* 送貨 */
+.s-truck { background-color: #a2d8f6 }
+.world { z-index: 2; background-repeat: repeat-x; background-size: 100cqw 25cqw; image-rendering: pixelated } .world > * { position: absolute } .truck { z-index: 6 } .truck img { width: 100%; height: 100% }
+.belt { z-index: 3; border: .3cqw solid var(--ink); background: repeating-linear-gradient(90deg, #3a3550 0 1.2cqw, #5d5a77 1.2cqw 2.4cqw) } .belt.run { animation: belt .25s linear infinite }
+@keyframes belt { to { background-position: 2.4cqw 0 } }
+.crate { z-index: 4 } .lid { z-index: 5 }
+
+/* 鑰匙開鎖 */
+.s-lock { background-color: #5d5266 }
+.torch { z-index: 3 } .hook { z-index: 3 } .key { z-index: 9 } .key.in { z-index: 11 } .lock { z-index: 10 }
+.doorglow { left: 36.5cqw; top: 6.4cqw; width: 27cqw; height: 44.8cqw; border-radius: 13.5cqw 13.5cqw 0 0; z-index: 8; background: radial-gradient(circle at 50% 68%, #fffaf0, #ffd166 35%, rgba(255,122,26,.75) 70%, rgba(120,40,20,.6)); pointer-events: none }
+.chest { z-index: 18 }
+
+/* 火車 */
+.s-train { background-color: #b2dcf6 }
+.car { z-index: 5 } .loco { z-index: 6 }
+.tn-holeIn { z-index: 3 } .tn-mountBack { z-index: 4 } .tn-holeShade { z-index: 7 } .tn-mountFront { z-index: 8 } .flip { transform: scaleX(-1) }
+.cartag { z-index: 7; translate: -50% 0; background: var(--paper); border: .3cqw solid var(--ink); padding: 0 .6cqw; font-size: 1.6cqw; font-weight: 900; white-space: nowrap; max-width: 19cqw; overflow: hidden; text-overflow: ellipsis }
+.tunnelDark { inset: 0; z-index: 45; background: #0c0a14; pointer-events: none }
+
+/* 信鴿 */
+.s-dove { background-color: #ffe6ec }
+.railing { z-index: 9 } .cloudpx { z-index: 2; background-size: 100% 100%; image-rendering: pixelated } .dove { z-index: 12 } .envp { z-index: 13 }
+
+/* 實驗室 */
+.s-lab { background-color: #cfe8e2 }
+.burner { z-index: 4 } .flask { z-index: 5; transform-origin: 50% 100% } .bottle { z-index: 6; transform-origin: 50% 20% } .stream { z-index: 4; translate: -50% 0 } .sprout { z-index: 4 }
+.flame { z-index: 3; width: 3cqw; height: 3.4cqw; translate: -50% -100%; border-radius: 50% 50% 40% 40%; background: radial-gradient(circle at 50% 70%, #fff 0 20%, #78c3f0 45%, #3c8dde 65%, transparent 70%); animation: flick .08s steps(2) infinite; transition: width .4s, height .4s }
+.flame.big { width: 5cqw; height: 6cqw }
+@media (prefers-reduced-motion: reduce) { .picking .lbl, .belt.run, .dizzy { animation: none } }
+/* 光芒：邊緣漸淡，不要看起來像一個圓盤在轉 */
+.rays { -webkit-mask-image: radial-gradient(circle, #000 0 18%, rgba(0,0,0,.55) 38%, transparent 66%); mask-image: radial-gradient(circle, #000 0 18%, rgba(0,0,0,.55) 38%, transparent 66%); background: repeating-conic-gradient(rgba(255,226,140,.75) 0 7deg, transparent 7deg 22deg) !important; animation-duration: 14s !important; border-radius: 0 !important }
+.fx-rays { -webkit-mask-image: radial-gradient(circle, #000 0 25%, transparent 62%); mask-image: radial-gradient(circle, #000 0 25%, transparent 62%); border-radius: 0 !important }
+
+/* 範圍選單 */
+#unitSel { font: inherit; font-weight: 700; font-size: 17px; min-height: 46px; padding: 4px 10px; border: 3px solid var(--ink); background: #fff; box-shadow: 0 3px 0 var(--ink); max-width: 100%; flex: 1 1 260px }
+.opt:disabled, .go:disabled { opacity: .45 }
+.brand a.home { color: inherit }
