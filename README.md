@@ -25,6 +25,7 @@
 
 ## 程式檔怎麼分
 
+- `assets/common.js`：四個頁面共用的本機儲存、錯題本（kr-wrong-v1）、讀題庫，每頁都要最先載入
 - `assets/app.js`、`assets/style.css`：複習小書首頁（index.html）
 - `assets/spy.js`、`assets/spy.css`：找出間諜（spy.html）
 - `assets/games/games-core.js`：所有答題小遊戲的本體（點陣人物、音效、各種遊戲），小遊戲頁和洞穴大冒險共用

@@ -25,14 +25,12 @@ function pickGame(q) {
   return b.splice(i, 1)[0];
 }
 /* ---------- 題庫：讀 data/index.json 和各單元檔，題目代號「單元檔#題號」（題組小題「#題號.小題」），和複習小書共用錯題本 kr-wrong-v1 ---------- */
-const WB = 'kr-wrong-v1';
-const wrongBook = () => new Set(store.get(WB, []));
-function markWrong(key, wrong) { const w = wrongBook(); if (wrong) w.add(key); else w.delete(key); store.set(WB, [...w]); }
-const dataUrl = file => 'data/' + file.split('/').map(encodeURIComponent).join('/');
+// 錯題本、讀題庫在 common.js（KR），和其他頁面共用
+const wrongBook = KR.wrong.all, markWrong = KR.wrong.mark;
 const DEF_CAT = { mc: '選擇', tf: '是非', group: '題組' };
 const unitCache = new Map();
 function loadUnit(meta, grade, subject) {
-  if (!unitCache.has(meta.file)) unitCache.set(meta.file, fetch(dataUrl(meta.file)).then(r => { if (!r.ok) throw Error(meta.file); return r.json(); }).then(d => {
+  if (!unitCache.has(meta.file)) unitCache.set(meta.file, KR.loadUnitFile(meta.file).then(d => {
     const u = `${grade} ${meta.title}`, out = [];
     (d.questions || []).forEach((x, i) => {
       const key = `${meta.file}#${i}`, base = { key, s: subject, u, c: x.cat || DEF_CAT[x.type], w: x.why || '', unit: meta.file };
@@ -204,5 +202,5 @@ function fit() {
   document.body.classList.toggle('tight', wide || below < 240);
 }
 addEventListener('resize', fit);
-fetch('data/index.json').then(r => r.json()).then(ix => { INDEX = ix; showSetup(); })
+KR.loadIndex().then(ix => { INDEX = ix; showSetup(); })
   .catch(() => { $('#setup').hidden = false; $('#setup').innerHTML = '<h2>題目讀取失敗</h2><p>請檢查網路，再重新整理頁面。</p>'; });
