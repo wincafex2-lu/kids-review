@@ -1,5 +1,6 @@
-/* 洞穴大冒險：沿用「最後一刻揭曉」的遊戲（翻板、吊橋、礦車、鑰匙）當關卡，最後打魔王。
+/* 洞穴大冒險：沿用「最後一刻揭曉」的遊戲當洞穴關卡（下面的遊戲本體從 assets/games/games.js 複製），最後打魔王。
    題目讀 data/index.json 和各單元檔；錯題和複習小書共用錯題本（localStorage kr-wrong-v1，題目代號「單元檔#題號」）。 */
+
 'use strict';
 const $ = s => document.querySelector(s);
 const stage = $('#stage');
@@ -844,18 +845,526 @@ const LAB = { id: 'lab', name: '🧪 神奇實驗室', how: '把寫著正確答�
     return { ok, k };
   } };
 
+/* ---------- 國語字音字形：拆炸彈、賽馬、扭蛋機、火箭發射、釣大魚、打怪獸（四個短選項的選擇題） ---------- */
+const SIX = [
+/* ---------- 1 拆炸彈 ---------- */
+{ id: 'bomb', name: '💣 拆炸彈', how: '剪斷寫著正確答案的那條線，才能解除炸彈！',
+  async play(scene, opts, ans) {
+    scene.className = 'scene s-bomb'; setBG(scene, 'bomb');
+    const ys = [15, 25, 35, 45], cols = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b'];
+    const BX = 19, BY = 28; // 炸彈中心
+    let svg = '<svg class="ov" viewBox="0 0 100 62.5" aria-hidden="true"><path id="fuse" d="M20 15 C 22 9, 27 11, 28 6" stroke="#c9b48a" stroke-width="1" fill="none" stroke-dasharray="14" stroke-dashoffset="0"/>';
+    ys.forEach((y, i) => {
+      const by = BY - 3 + i * 2.4;
+      svg += `<g data-w="${i}"><path class="wire" data-h="l" stroke="${cols[i]}" d="M30 ${by} C 44 ${by}, 44 ${y}, 62 ${y}"/><path class="wire" data-h="r" stroke="${cols[i]}" d="M62 ${y} L 91 ${y}"/></g>`;
+    });
+    svg += '</svg>';
+    scene.innerHTML = `<img class="px board" alt="" src="${ART.SP.board}">${svg}<div class="bomb"><img class="px" alt="" src="${ART.SP.bomb}"><span class="led"></span><span class="lcd">0:30</span></div>`;
+    const spark = at(el('div', 'spark'), 28, 6); scene.append(spark);
+    const lcd = scene.querySelector('.lcd'), led = scene.querySelector('.led'), bomb = scene.querySelector('.bomb'), fuse = scene.querySelector('#fuse');
+    const guy = new Actor(scene, '拆彈員', 44, 60, .72); guy.p = { ...guy.p, accessory: 'cap' }; guy.key = '拆彈員cap'; guy.render();
+    const tags = opts.map((o, i) => tag(o, 70, ys[i]));
+    scene.append(...tags);
+    let sec = 30; const iv = setInterval(() => { if (sec > 10) { sec--; lcd.textContent = '0:' + String(sec).padStart(2, '0'); SFX.tick(); } }, 1000);
+    const k = await choose(scene, tags);
+    clearInterval(iv);
+    // 剪刀從右上飛進來，喀嚓兩下
+    const y = ys[k], sc = at(el('div', 'scissors', '✂️'), 96, -6); scene.append(sc);
+    await tween(420, t => at(sc, 96 + (64 - 96) * t, -6 + (y + 0 + 6) * t), ease.out);
+    for (let i = 0; i < 2; i++) { await anim(sc, [{ rotate: '0deg' }, { rotate: '-25deg' }, { rotate: '0deg' }], 180, { fill: 'none' }); SFX.snip(); }
+    const g = scene.querySelector(`[data-w="${k}"]`), L = g.querySelector('[data-h="l"]'), R = g.querySelector('[data-h="r"]');
+    // 斷掉的兩頭垂下來（彈一下）
+    const by = BY - 3 + k * 2.4;
+    tween(600, t => { const d = 5 * t; L.setAttribute('d', `M30 ${by} C 44 ${by}, 44 ${y}, ${61 - t} ${y + d}`); R.setAttribute('d', `M${63 + t} ${y + d} Q 76 ${y + d * .2}, 91 ${y}`); }, ease.back);
+    debris(scene, 62, y, 8, ['#ffd166', '#fff3c4', cols[k]]);
+    anim(sc, [{ opacity: 1 }, { opacity: 0, transform: 'translate(4cqw,-4cqw)' }], 300);
+    tags[k].style.transition = 'none';
+    anim(tags[k], [{ transform: 'none' }, { transform: `translateY(${50 - y}cqw) rotate(16deg)`, offset: .75 }, { transform: `translateY(${47 - y}cqw) rotate(10deg)` }], 700, { easing: 'cubic-bezier(.5,0,.9,.6)' });
+    await sleep(500);
+    // 倒數：鏡頭推近炸彈，心跳越來越快
+    guy.set('stand', 'scared'); const sweat = at(el('div', 'sweat'), guy.x + 4, guy.y - 14); scene.append(sweat);
+    led.classList.add('fast'); zoom(scene, BX, 45, 1.35, 1800);
+    for (const s of [5, 4, 3, 2, 1]) {
+      lcd.textContent = '0:0' + s; SFX.beat(); tone(880 + (5 - s) * 140, .06, 'square', .05);
+      fuse.setAttribute('stroke-dashoffset', -(6 - s) * 2.4); at(spark, 28 - (6 - s) * 1.4, 6 + (6 - s) * 1.6);
+      anim(bomb, [{ scale: 1 }, { scale: 1 + (6 - s) * .015 }, { scale: 1 }], 300, { fill: 'none' });
+      await sleep(s > 2 ? 560 : 720);
+    }
+    lcd.textContent = '0:00'; spark.remove(); tone(1800, .05, 'square', .05);
+    await sleep(700);
+    await revealFlash(scene);
+    sweat.remove();
+    const ok = k === ans;
+    if (ok) {
+      lcd.textContent = 'SAFE'; lcd.classList.add('safe'); led.className = 'led safe';
+      for (let i = 0; i < 5; i++) puff(scene, 25, 7, 3, '#b9b6d8', 1500, rnd(-2, 2), -6);
+      zoom(scene, BX, 45, 1, 600); SFX.win(); confetti(scene); guy.cheer(); stamp(scene, true, '炸彈解除！');
+    } else {
+      await anim(bomb, [{ scale: 1, filter: 'none' }, { scale: 1.25, filter: 'brightness(1.8) sepia(1) hue-rotate(-30deg)' }], 220);
+      SFX.boom(); flash(scene); shake(); zoom(scene, BX, 45, 1, 300);
+      const fb = at(el('div', 'fireball'), BX, BY); scene.append(fb);
+      fb.animate([{ width: '6cqw', height: '6cqw' }, { width: '80cqw', height: '80cqw', opacity: .9, offset: .5 }, { width: '90cqw', height: '90cqw', opacity: 0 }], { duration: T(1100), easing: 'ease-out', fill: 'forwards' });
+      [0, 150, 300].forEach(d => { const r = at(el('div', 'ring'), BX, BY); scene.append(r); r.animate([{ width: '4cqw', height: '4cqw', opacity: 1 }, { width: '110cqw', height: '110cqw', opacity: 0 }], { duration: T(800), delay: d, fill: 'forwards' }); });
+      debris(scene, BX, BY, 24, ['#121019', '#5d5a77', '#ff7a1a', '#ffd166']);
+      bomb.style.opacity = 0;
+      for (let i = 0; i < 12; i++) setTimeout(() => puff(scene, BX + rnd(-14, 24), BY + rnd(-10, 14), rnd(10, 18), '#4a4458', 2200, rnd(-3, 3), -8), T(250 + i * 60));
+      guy.pal = SOOT; guy.set('stand', 'scared');
+      scene.append(el('div', 'soot'));
+      await sleep(900); guy.say('咳咳…', 1600); stamp(scene, false, '轟！炸了');
+    }
+    return { ok, k };
+  } },
+
+/* ---------- 2 賽馬 ---------- */
+{ id: 'race', name: '🏇 賽馬大賽', how: '押一匹馬！只有背著正確答案的馬會跑第一名。',
+  async play(scene, opts, ans) {
+    scene.className = 'scene s-race'; setBG(scene, 'race');
+    scene.innerHTML = '<div class="finish"></div><div class="gatebar"></div>';
+    const laneTop = i => 12 + i * 11.4, feet = i => laneTop(i) + 10.8;
+    opts.forEach((_, i) => { const l = el('div', 'lane'); l.style.top = U(laneTop(i)); scene.append(l); });
+    // 觀眾席
+    const fans = []; for (let i = 0; i < 12; i++) fans.push(new Actor(scene, '觀眾' + i, 4 + i * 8.4, 11.2, .36));
+    fans.forEach((f, i) => { f.anim = i % 2 === 0; f.pose = 'step'; });
+    const lamps = [40, 44, 48].map(x => { const l = el('div', 'lamp'); at(l, x, 1.6); scene.append(l); return l; });
+    const START = 21;
+    const horses = opts.map((o, i) => {
+      const h = el('div', 'horse ' + SZ); h.innerHTML = `<span class="bib">${esc(o)}</span>`; const im = pimg(HORSE[i][0]); h.prepend(im); h._im = im;
+      at(h, START, feet(i)); scene.append(h); return h;
+    });
+    const tags = opts.map((o, i) => tag(o, 40, laneTop(i) + 5.7));
+    scene.append(...tags);
+    const say = el('div', 'commentary', '選一匹馬下注！'); scene.append(say);
+    const k = await choose(scene, tags);
+    horses[k].classList.add('mine');
+    await sleep(300); tags.forEach(t => anim(t, [{ opacity: 1 }, { opacity: 0 }], 250).then(() => t.remove()));
+    say.textContent = '各就各位……';
+    for (const l of lamps) { l.classList.add('red'); tone(660, .12, 'square', .05); await sleep(500); }
+    lamps.forEach(l => { l.classList.remove('red'); l.classList.add('green'); }); tone(1320, .35, 'square', .06);
+    anim(scene.querySelector('.gatebar'), [{ transform: 'none', opacity: 1 }, { transform: 'translateY(-60%)', opacity: 0 }], 300);
+    say.textContent = '出發！'; fans.forEach(f => f.anim = true);
+    // 劇本：選錯的馬一路領先、最後被正確的馬追過；選對的馬先落後、最後衝刺
+    const pts = [0, .22, .45, .7, .88, 1];
+    const plan = opts.map((_, i) => {
+      let v;
+      if (i === ans) v = [0, rnd(.16, .19), rnd(.35, .39), .6, .84, 1];
+      else if (i === k) v = [0, rnd(.23, .26), rnd(.5, .53), .76, .92, .978];
+      else { const e = rnd(.86, .95); v = [0, rnd(.18, .23), rnd(.4, .47), rnd(.6, .69), e - rnd(.05, .08), e]; }
+      if (k === ans && i !== ans) { v[3] = Math.max(v[3], rnd(.68, .73)); v[4] = Math.max(v[4], .88); v[5] = Math.min(Math.max(v[5], .94), .985); }
+      return v;
+    });
+    const posAt = (v, t) => { let s = 0; while (s < pts.length - 2 && t > pts[s + 1]) s++; const u = (t - pts[s]) / (pts[s + 1] - pts[s]); const e = u * u * (3 - 2 * u) * .5 + u * .5; return v[s] + (v[s + 1] - v[s]) * e; };
+    const FIN = 87.2; let frame = 0, lastF = 0, lastDust = 0, said = 0, zoomed = false;
+    await new Promise(res => {
+      const t0 = performance.now(); let virt = 0, prev = t0;
+      const step = now => {
+        // 最後一段放慢（慢動作）
+        const dt = now - prev; prev = now; virt += dt * (virt / T(6000) > .9 ? .35 : 1);
+        const t = Math.min(1, virt / T(6000));
+        horses.forEach((h, i) => at(h, START + posAt(plan[i], t) * (FIN - START), feet(i)));
+        if (now - lastF > 90) { lastF = now; frame ^= 1; horses.forEach((h, i) => h._im.src = HORSE[i][(frame + i) % 2]); noise(.03, .1, 700); }
+        if (now - lastDust > 140) { lastDust = now; horses.forEach((h, i) => puff(scene, START - 12 + posAt(plan[i], t) * (FIN - START), feet(i) - 1, 2.6, '#e0b88a', 600, -3, -1)); }
+        if (t > .35 && said === 0) { said = 1; say.textContent = `「${opts[k]}」${k === ans ? '還在後面追！' : '跑在最前面！'}`; }
+        if (t > .75 && said === 1) { said = 2; say.textContent = '最後直線！難分難解！'; SFX.drum(10); }
+        if (t > .86 && !zoomed) { zoomed = true; zoom(scene, 86, 60, 1.4, 600); }
+        t < 1 ? requestAnimationFrame(step) : res();
+      };
+      requestAnimationFrame(step);
+    });
+    fans.forEach(f => f.anim = false);
+    // 衝線：拍照判讀
+    flash(scene); tone(1800, .08, 'square', .05);
+    const ph = el('div', 'photo'); scene.append(ph); say.textContent = '📸 終點照片判讀中……';
+    await sleep(1300); ph.remove();
+    await revealFlash(scene);
+    zoom(scene, 86, 60, 1, 500);
+    horses[ans].append(el('span', 'crown', '👑'));
+    const ok = k === ans;
+    say.textContent = `冠軍是「${opts[ans]}」！`;
+    if (ok) { SFX.win(); confetti(scene); fans.forEach(f => f.cheer()); stamp(scene, true, '押中冠軍！'); }
+    else { SFX.lose(); fans.forEach((f, i) => i % 3 === 0 ? f.cheer() : f.set('stand', 'sad')); stamp(scene, false, '差一點點！'); }
+    return { ok, k };
+  } },
+
+/* ---------- 3 扭蛋機 ---------- */
+{ id: 'gacha', name: '🪙 扭蛋機', how: '投下刻著正確答案的硬幣，扭到大獎扭蛋！',
+  async play(scene, opts, ans) {
+    scene.className = 'scene s-gacha'; setBG(scene, 'gacha');
+    const cols = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b', '#b48cff', '#ff7a1a'];
+    let balls = '';
+    for (let i = 0; i < 15; i++) balls += `<span class="ball" style="--c:${cols[i % cols.length]};left:${rnd(1, 21).toFixed(1)}cqw;top:${rnd(7, 17).toFixed(1)}cqw"></span>`;
+    scene.innerHTML = `<div class="machine"><div class="dome"><div class="glass">${balls}</div><img class="px" alt="" src="${ART.SP.dome}"></div><div class="mbody"><img class="px" alt="" src="${ART.SP.machine}"><img class="px knob" alt="" src="${ART.SP.knob}"></div></div>`;
+    const kid = new Actor(scene, '扭蛋小孩', 24, 50.5, .75); kid.set('right', '', false);
+    const xs = [12, 33, 67, 88];
+    const coins = opts.map((o, i) => { const c = el('button', 'coin ' + SZ, esc(o)); c.type = 'button'; at(c, xs[i], 56); scene.append(c); return c; });
+    const k = await choose(scene, coins);
+    // 硬幣翻轉飛進投幣口
+    const c = coins[k]; c.style.zIndex = 30; const x0 = xs[k], y0 = 56, x1 = 58.1, y1 = 32.6;
+    SFX.whoosh();
+    await tween(750, (t, raw) => { at(c, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t - Math.sin(Math.PI * t) * 14); c.style.transform = `scaleX(${Math.cos(raw * Math.PI * 6).toFixed(2)}) scale(${1 - .45 * t})`; }, ease.io);
+    c.style.transform = 'scale(.55) rotate(90deg) scaleY(.4)';
+    await anim(c, [{ clipPath: 'inset(0 0 0 0)', transform: 'scale(.55) rotate(90deg) scaleY(.4) translateX(0)' }, { clipPath: 'inset(0 0 0 100%)', transform: 'scale(.55) rotate(90deg) scaleY(.4) translateX(0)' }], 260);
+    c.remove(); SFX.clink();
+    kid.set('stand'); kid.say('轉轉看！', 1000);
+    const knob = scene.querySelector('.knob'), dome = scene.querySelector('.dome');
+    const bs = [...dome.querySelectorAll('.ball')];
+    for (let i = 1; i <= 3; i++) {
+      SFX.click(); tone(180, .06, 'square', .05, 120);
+      knob.animate([{ rotate: `${(i - 1) * 120}deg` }, { rotate: `${i * 120 + 12}deg`, offset: .8 }, { rotate: `${i * 120}deg` }], { duration: T(420), fill: 'forwards', easing: 'ease-in-out' });
+      bs.forEach(b => b.animate([{ transform: 'none' }, { transform: `translate(${rnd(-3, 3)}cqw, ${rnd(-6, -1)}cqw) rotate(${rnd(-120, 120)}deg)` }, { transform: 'none' }], { duration: T(420), easing: 'ease-out' }));
+      await sleep(520);
+    }
+    // 扭蛋從出口掉出來，彈兩下，滾到前面
+    const cap = el('div', 'capsule', `<div class="top" style="--c:${pick(cols)}"></div><div class="bot"></div><div class="prize"></div>`);
+    at(cap, 50, 44); scene.append(cap); SFX.pop();
+    await anim(cap, [{ transform: 'translateY(-3cqw) scale(.5)' }, { transform: 'translateY(6cqw) scale(.7)', offset: .45 }, { transform: 'translateY(3.5cqw) scale(.7)', offset: .65 }, { transform: 'translateY(6cqw) scale(.7)', offset: .8 }, { transform: 'translateY(5.4cqw) scale(.7)', offset: .9 }, { transform: 'translateY(6cqw) scale(.7)' }], 800, { easing: 'ease-in' });
+    tone(300, .05, 'square', .05);
+    kid.set('stand', '');
+    await anim(cap, [{ transform: 'translateY(6cqw) scale(.7) rotate(0)' }, { transform: 'translateY(-14cqw) scale(2.6) rotate(720deg)' }], 900, { easing: 'cubic-bezier(.3,1.25,.5,1)' });
+    const base = 'translateY(-14cqw) scale(2.6)';
+    for (const [deg, n] of [[8, 4], [14, 6], [24, 10]]) {
+      SFX.drum(n);
+      await anim(cap, [0, deg, -deg, deg * .6, 0].map(d => ({ transform: `${base} rotate(${d}deg)` })), 460);
+      await sleep(360);
+    }
+    kid.set('stand', 'scared');
+    await sleep(300);
+    await revealFlash(scene);
+    const ok = k === ans, top = cap.querySelector('.top'), prize = cap.querySelector('.prize');
+    prize.textContent = ok ? '⭐' : '';
+    if (ok) scene.append(el('div', 'rays'));
+    SFX.pop();
+    top.animate([{ transform: 'none' }, { transform: 'translate(-30%,-140%) rotate(-60deg)' }], { duration: T(320), fill: 'forwards', easing: 'ease-out' });
+    if (ok) {
+      prize.animate([{ scale: 0, translate: '-50% -50%' }, { scale: 1.2, translate: '-50% -140%' }], { duration: T(450), fill: 'forwards', easing: 'cubic-bezier(.3,1.7,.5,1)' });
+      SFX.win(); confetti(scene); kid.cheer(); stamp(scene, true, '中大獎！', 16);
+    } else {
+      // 飄出一張小紙條：銘謝惠顧
+      const slip = at(el('div', 'slip', '銘謝惠顧'), 50, 34); scene.append(slip);
+      slip.animate([{ transform: 'translateY(4cqw) scale(.2) rotate(0)', opacity: 0 }, { transform: 'translateY(-6cqw) scale(1) rotate(-8deg)', opacity: 1, offset: .5 }, { transform: 'translateY(-3cqw) scale(1) rotate(6deg)', opacity: 1 }], { duration: T(1200), fill: 'forwards', easing: 'ease-out' });
+      SFX.lose(); kid.sad(); await sleep(700); stamp(scene, false, '沒中…', 16);
+    }
+    return { ok, k };
+  } },
+
+/* ---------- 4 火箭發射 ---------- */
+{ id: 'rocket', name: '🚀 火箭發射', how: '選一架火箭！只有載著正確答案的火箭能飛上太空。',
+  async play(scene, opts, ans) {
+    scene.className = 'scene s-rocket'; setBG(scene, 'rocket');
+    scene.innerHTML = '';
+    const GY = 52.5, xs = [24, 44, 64, 84];
+    const crew = new Actor(scene, '地勤', 9, 55, .7);
+    const rockets = opts.map((o, i) => {
+      const p = pimg(ART.SP.pad, 13.75, 3.75); p.classList.add('pad'); p.style.left = U(xs[i]); scene.append(p);
+      const tw = pimg(ART.SP.tower, 3.75, 22.5); tw.classList.add('tower'); tw.style.left = U(xs[i] + 5); scene.append(tw);
+      const r = el('div', 'rocket'); r.append(el('div', 'fire'), pimg(ROCKET[i])); at(r, xs[i] - 4.2, GY - 11.4 - 0.6); scene.append(r);
+      return r;
+    });
+    const tags = opts.map((o, i) => { const w = el('div', 'ptag'); at(w, xs[i], 53.6); const t = tag(o); w.append(t); scene.append(w); return t; });
+    const k = await choose(scene, tags);
+    const r = rockets[k], fire = r.querySelector('.fire'), X = xs[k];
+    rockets.forEach((x, i) => { if (i !== k) anim(x, [{ opacity: 1 }, { opacity: .3 }], 400); });
+    const st = { x: 0, y: 0, a: 0 }, apply = () => r.style.transform = `translate(${st.x}cqw, ${st.y}cqw) rotate(${st.a}deg)`;
+    const big = el('div', 'big'); scene.append(big);
+    crew.say('倒數！', 900);
+    for (const n of ['3', '2', '1']) { big.textContent = n; tone(660, .15, 'square', .06); anim(big, [{ scale: 1.6, opacity: 0 }, { scale: 1, opacity: 1 }], 250); await sleep(700); }
+    big.remove(); tone(1320, .3, 'square', .06);
+    // 點火：底下冒大團白煙，火焰變長，抖動後慢慢升空
+    SFX.whoosh(); fire.style.height = U(5);
+    for (let i = 0; i < 14; i++) setTimeout(() => puff(scene, X + rnd(-2, 2), GY - .5, rnd(5, 9), '#d3d1e6', 1600, (i % 2 ? 1 : -1) * rnd(5, 12), -2), T(i * 60));
+    await tween(500, t => { st.x = Math.sin(t * 60) * .4; apply(); });
+    fire.style.height = U(8);
+    await tween(1700, t => { st.x = Math.sin(t * 80) * .2; st.y = -24 * t; apply(); fire.style.height = U(8 + Math.random() * 2); }, ease.in);
+    // 半空熄火三次（懸念）
+    for (let i = 0; i < 3; i++) { fire.style.height = '0'; SFX.sputter(); puff(scene, X, GY - 24 + 1, 3, '#5d5a77', 800, rnd(-2, 2), 2); await sleep(220); fire.style.height = U(6); await sleep(260); }
+    fire.style.height = '0';
+    await tween(700, t => { st.a = Math.sin(t * 25) * 3 * (1 - t); st.y = -24 + Math.sin(t * Math.PI) * -.6; apply(); });
+    crew.set('stand', 'scared');
+    await sleep(300);
+    await revealFlash(scene);
+    const ok = k === ans;
+    if (ok) {
+      fire.style.height = U(16); fire.style.width = U(5.4); scene.classList.add('warp'); for (let i = 0; i < 30; i++) { const s = el('span', 'star'); s.style.left = rnd(0, 100).toFixed(1) + '%'; s.style.top = rnd(0, 80).toFixed(1) + '%'; s.style.animationDelay = -rnd(0, .35).toFixed(2) + 's'; scene.prepend(s); } SFX.whoosh(); tone(200, 1.2, 'sawtooth', .05, 0, 1400);
+      crew.cheer();
+      await tween(1000, t => { st.y = -24 - 80 * t; apply(); if (Math.random() < .5) puff(scene, X + rnd(-1, 1), GY - 6 + st.y + 12, 3, '#ffd166', 500, 0, 3); }, ease.in);
+      SFX.win(); confetti(scene); stamp(scene, true, '發射成功！');
+    } else {
+      // 熄火後先停一下，機頭慢慢歪過去，然後一邊轉一邊冒黑煙掉下來
+      const dir = k === 3 ? -1 : 1;
+      puff(scene, X, GY - 24 + 1, 4, '#2a2640', 1000, 0, 2);
+      await tween(800, t => { st.a = dir * 30 * t; st.y = -24 - 1.2 * Math.sin(t * Math.PI); apply(); }, ease.in);
+      tone(900, 1.1, 'triangle', .07, 0, 110);
+      let vy = 0, va = dir * 90, last = performance.now(), smokeT = 0;
+      await new Promise(res => {
+        const f = now => {
+          const dt = Math.min(.05, (now - last) / 1000) / (RM ? .4 : 1); last = now;
+          vy += 70 * dt; st.y += vy * dt; st.x += dir * 9 * dt; va += dir * 140 * dt; st.a = Math.max(-150, Math.min(150, st.a + va * dt)); apply();
+          smokeT += dt; if (smokeT > .05) { smokeT = 0; puff(scene, X + st.x, GY - 6 + st.y, rnd(3.5, 5.5), '#6b6880', 1400, rnd(-1, 1), -3); }
+          st.y < 1 ? requestAnimationFrame(f) : res();
+        };
+        requestAnimationFrame(f);
+      });
+      // 墜地：爆炸、碎片、彈起來，最後躺在地上冒煙
+      st.y = 1; apply();
+      SFX.boom(); flash(scene); shake();
+      const fb = at(el('div', 'fireball'), X + st.x, GY - 2); scene.append(fb);
+      fb.animate([{ width: '4cqw', height: '4cqw' }, { width: '26cqw', height: '26cqw', opacity: 1, offset: .4 }, { width: '30cqw', height: '30cqw', opacity: 0 }], { duration: T(800), fill: 'forwards' });
+      debris(scene, X + st.x, GY - 3, 18, ['#e8414f', '#f2f4f8', '#5d5a77', '#ffd166']);
+      const a0 = st.a, aEnd = dir * 100;
+      await tween(500, t => { st.a = a0 + (aEnd - a0) * t; st.y = 1 - Math.sin(t * Math.PI) * 3; apply(); });
+      for (let i = 0; i < 14; i++) setTimeout(() => puff(scene, X + st.x + rnd(-2, 2), GY - 3, rnd(4, 7), '#6b6880', 2200, rnd(-1, 2), -14), T(i * 110));
+      crew.set('stand', 'sad'); crew.say('啊……', 1500);
+      await sleep(600); stamp(scene, false, '噗咻～失敗');
+    }
+    return { ok, k };
+  } },
+
+/* ---------- 5 釣魚 ---------- */
+{ id: 'fish', name: '🎣 釣大魚', how: '把魚鉤丟向寫著正確答案的魚影，釣起大魚！',
+  async play(scene, opts, ans) {
+    scene.className = 'scene s-fish'; setBG(scene, 'fish');
+    const W = 18.75; // 水面
+    scene.innerHTML = '<div class="wave"></div><svg class="ov" viewBox="0 0 100 62.5" aria-hidden="true"><line id="rod" x1="15.5" y1="11" x2="31" y2="1.5" stroke="#4e3420" stroke-width=".9" stroke-linecap="round"/><path id="ln" fill="none" stroke="#fffaf0" stroke-width=".3"/><path id="ln2" fill="none" stroke="#e6f6ff" stroke-width=".25" opacity=".8"/><path id="hook" fill="none" stroke="#d3d1e6" stroke-width=".5"/></svg>';
+    const fisher = new Actor(scene, '釣客', 12, 14.8, .62); fisher.set('right', '', false);
+    const rod = scene.querySelector('#rod'), ln = scene.querySelector('#ln'), ln2 = scene.querySelector('#ln2'), hk = scene.querySelector('#hook');
+    const tip = { x: 31, y: 1.5 };
+    const pos = [[42, 30], [76, 28], [50, 50], [82, 50]];
+    const sh = opts.map((o, i) => { const s = el('div', 'shadow'); s.append(pimg(ART.SP.fishShadow, 17.5, 7.5)); at(s, pos[i][0], pos[i][1]); scene.append(s); return s; });
+    const tags = opts.map((o, i) => { const t = tag(o); sh[i].append(t); return t; });
+    const drawLine = (bx, by, sag = 3) => ln.setAttribute('d', `M${tip.x} ${tip.y} Q ${(tip.x + bx) / 2} ${Math.max(tip.y, by) + sag}, ${bx} ${by}`);
+    drawLine(tip.x + 1, tip.y + 6, 0);
+    const k = await choose(scene, tags);
+    const [fx, fy] = pos[k], hx = fx - 7, hy = fy; // 魚鉤放到魚嘴前面
+    // 甩竿：竿子往後一揚，再往前甩出去
+    SFX.whoosh();
+    await tween(250, t => { rod.setAttribute('x2', 31 - 12 * t); rod.setAttribute('y2', 1.5 - 1 * t); tip.x = 31 - 12 * t; tip.y = 1.5 - t; drawLine(tip.x + 1, tip.y + 6, 0); });
+    await tween(200, t => { tip.x = 19 + 12 * t; tip.y = .5 + t; rod.setAttribute('x2', tip.x); rod.setAttribute('y2', tip.y); });
+    const bob = el('div', 'part'); size(bob, 2.6, 2.6); bob.style.cssText += 'border-radius:50%;translate:-50% -50%;background:linear-gradient(#e8414f 0 50%,#fffaf0 50%);border:.4cqw solid #1d1b2e;z-index:6';
+    scene.append(bob);
+    await tween(800, t => { const bx = tip.x + (hx - tip.x) * t, by = tip.y + (W - tip.y) * t - Math.sin(Math.PI * t) * 12; at(bob, bx, by); drawLine(bx, by, 1 + 3 * t); }, ease.lin);
+    SFX.splash(); for (let i = 0; i < 6; i++) { const d = at(el('div', 'drop'), hx, W); scene.append(d); d.animate([{ transform: 'none' }, { transform: `translate(${rnd(-5, 5)}cqw, -${rnd(3, 7)}cqw)`, offset: .5 }, { transform: `translate(${rnd(-7, 7)}cqw, 0)`, opacity: 0 }], { duration: T(600), fill: 'forwards' }); }
+    // 魚線沉到魚的位置，魚鉤掛在魚嘴前
+    await tween(800, t => { const y = W + (hy - W) * t; ln2.setAttribute('d', `M${hx} ${W} L ${hx} ${y}`); hk.setAttribute('d', `M${hx} ${y} l 0 1.2 a .9 .9 0 0 0 1.8 0`); }, ease.out);
+    sh.forEach((s, i) => { if (i !== k) anim(s, [{ opacity: 1 }, { opacity: 0 }], 900); });
+    anim(tags[k], [{ opacity: 1 }, { opacity: 0 }], 500);
+    fisher.set('stand', '');
+    // 魚游過來輕咬三下，浮標一次比一次沉
+    await anim(sh[k], [{ transform: 'none' }, { transform: 'translateX(-1.5cqw)' }], 600, { easing: 'ease-in-out' });
+    for (const [d, n] of [[.8, 3], [1.6, 5], [2.8, 8]]) {
+      SFX.drum(n);
+      sh[k].animate([{ transform: 'translateX(-1.5cqw)' }, { transform: 'translateX(-2.6cqw)' }, { transform: 'translateX(-1.5cqw)' }], { duration: T(380) });
+      await tween(380, t => { const yy = W + Math.sin(Math.PI * t) * d; at(bob, hx, yy); drawLine(hx, yy, 4); });
+      await sleep(380);
+    }
+    fisher.set('stand', 'scared');
+    // 大力一拉：浮標沉下去，竿子彎下來
+    tone(300, .5, 'square', .05, 0, 900); SFX.splash();
+    bob.remove();
+    await tween(300, t => { tip.x = 31 - 2 * t; tip.y = 1.5 + 5 * t; rod.setAttribute('x2', tip.x); rod.setAttribute('y2', tip.y); ln.setAttribute('d', `M${tip.x} ${tip.y} L ${hx} ${W}`); });
+    await sleep(400);
+    await revealFlash(scene);
+    const ok = k === ans;
+    sh[k].remove(); hk.setAttribute('d', ''); ln2.setAttribute('d', '');
+    const cw = ok ? 16 : 10, chh = ok ? 6.9 : 7.1;
+    const c = pimg(ok ? FISH : BOOT, cw, chh); const cWrap = el('div', 'catch'); cWrap.append(c); at(cWrap, hx, hy); scene.append(cWrap);
+    for (let i = 0; i < 10; i++) { const d = at(el('div', 'drop'), hx + rnd(-4, 4), W); scene.append(d); d.animate([{ transform: 'none' }, { transform: `translate(${rnd(-10, 10)}cqw, -${rnd(8, 16)}cqw)`, offset: .5 }, { transform: `translate(${rnd(-14, 14)}cqw, 2cqw)`, opacity: 0 }], { duration: T(900), fill: 'forwards' }); }
+    SFX.splash();
+    await tween(800, t => { const y = hy + (6 - hy) * t; at(cWrap, hx, y); tip.y = 6.5 - 4 * t; tip.x = 29 + 2 * t; rod.setAttribute('x2', tip.x); rod.setAttribute('y2', tip.y); ln.setAttribute('d', `M${tip.x} ${tip.y} L ${hx} ${y}`); }, ease.out);
+    cWrap.animate([{ rotate: '-12deg' }, { rotate: '12deg' }], { duration: T(300), iterations: 6, direction: 'alternate', easing: 'ease-in-out' });
+    if (ok) { c.style.filter = 'drop-shadow(0 0 1.4cqw #ffd166)'; SFX.win(); confetti(scene); fisher.cheer(); stamp(scene, true, '大魚上鉤！'); }
+    else { SFX.lose(); fisher.sad(); fisher.say('舊鞋子？', 1600); await sleep(500); stamp(scene, false, '釣到舊鞋子…'); }
+    return { ok, k };
+  } },
+
+/* ---------- 6 打怪獸 ---------- */
+{ id: 'boss', name: '👾 打怪獸', how: '',
+  async play(scene, opts, ans) {
+    scene.className = 'scene s-boss'; setBG(scene, 'boss');
+    const kind = pick(['bullet', 'weapon', 'hero']);
+    $('#qhow').textContent = { bullet: '選一顆砲彈裝進大砲！只有正確答案的砲彈打得倒怪獸。', weapon: '選一把武器丟給勇者！只有正確答案的武器打得倒怪獸。', hero: '派一位勇者出戰！只有正確答案的勇者打得倒怪獸。' }[kind];
+    scene.innerHTML = '<div class="hp"><b>BOSS</b><i></i></div>';
+    const monster = el('div', 'monster idle'); monster.append(pimg(pick(MON))); scene.append(monster);
+    const hp = scene.querySelector('.hp i');
+    const xs = [8, 20, 32, 44], FEET = 49;
+    let items = [], heroes = [], shooter = null;
+    if (kind === 'hero') heroes = opts.map((_, i) => new Actor(scene, ['泓', '勇者小安', '勇者阿傑', '勇者小美'][i], xs[i], FEET, .62));
+    else {
+      items = opts.map((_, i) => {
+        const it = at(el('div', 'item'), xs[i], 41);
+        if (kind === 'bullet') { const b = el('div', 'ball2'); b.style.setProperty('--c', LANE[i]); it.append(b); }
+        else { const w = WEAPON[i]; it.append(pimg(w.src, w.w * .62, w.h * .62)); }
+        scene.append(it); return it;
+      });
+      if (kind === 'bullet') { shooter = at(el('div', 'item'), 54, 43); size(shooter, 11, 8.3); shooter.append(pimg(CANNON, 11, 8.3)); scene.append(shooter); }
+      else shooter = new Actor(scene, '泓', 55, FEET, .62).set('right', '', false);
+    }
+    const tags = opts.map((o, i) => tag(o, xs[i], 55));
+    scene.append(...tags);
+    const k = await choose(scene, tags);
+    (kind === 'hero' ? heroes.map(h => h.e) : items).forEach((e, i) => { if (i !== k) anim(e, [{ opacity: 1 }, { opacity: .25 }], 300); });
+    const MX = 70, MY = 36; // 怪獸身上
+    const hitFx = (n, lv) => {
+      noise(.12, .4, 1200); tone(160, .1, 'square', .06);
+      monster.animate([{ transform: 'none', filter: 'none' }, { transform: 'translateX(2cqw)', filter: 'brightness(2.4)' }, { transform: 'none', filter: 'none' }], { duration: T(240) });
+      const s = at(el('div', 'slash'), MX + rnd(-3, 3), MY + rnd(-4, 4)); s.style.rotate = rnd(-50, 50) + 'deg'; scene.append(s);
+      anim(s, [{ scale: '.2 1', opacity: 1 }, { scale: '1.2 1', opacity: 0 }], 300).then(() => s.remove());
+      debris(scene, MX, MY, 6, ['#fff3c4', '#ffd166']);
+      const d = at(el('div', 'dmg', `-${n}`), MX + rnd(-6, 6), MY - 10); scene.append(d);
+      anim(d, [{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(-6cqw)', opacity: 0 }], 900).then(() => d.remove());
+      hp.style.width = lv + '%';
+    };
+    // 準備：武器先交給勇者、砲彈先裝進大砲
+    if (kind !== 'hero') {
+      const it = items[k];
+      await tween(600, t => at(it, xs[k] + (52 - xs[k]) * t, 41 - Math.sin(Math.PI * t) * 10 + (kind === 'bullet' ? 2 : 0) * t), ease.io);
+      if (kind === 'bullet') { it.style.opacity = 0; SFX.click(); await anim(shooter, [{ transform: 'none' }, { transform: 'scale(1.1,.9)' }, { transform: 'none' }], 250); }
+      else { it.style.opacity = 0; shooter.say('收到！', 800); }
+    }
+    const strike = async (n, lv) => {
+      if (kind === 'hero') {
+        const h = heroes[k], x0 = h.x;
+        await h.walkTo(60, 420);
+        h.set('right', '', false); await anim(h.e, [{ transform: 'none' }, { transform: 'translateX(2cqw) rotate(8deg)' }, { transform: 'none' }], 160, { fill: 'none' });
+        hitFx(n, lv);
+        await h.walkTo(x0, 380);
+      } else if (kind === 'bullet') {
+        const b = el('div', 'shot'); const ball = el('div', 'ball2'); ball.style.setProperty('--c', LANE[k]); b.append(ball); at(b, 63, 42); scene.append(b);
+        SFX.boom(); anim(shooter, [{ transform: 'none' }, { transform: 'translateX(-1.5cqw)' }, { transform: 'none' }], 220, { fill: 'none' });
+        puff(scene, 65, 42, 4, '#d3d1e6', 500, 2, -1);
+        await tween(260, t => at(b, 63 + (MX - 63) * t, 42 - Math.sin(Math.PI * t) * 3 + (MY - 42) * t));
+        b.remove(); hitFx(n, lv); await sleep(380);
+      } else {
+        const w = WEAPON[k], s = el('div', 'shot'); s.append(pimg(w.src, w.w * .7, w.h * .7)); at(s, 58, 40); scene.append(s);
+        shooter.set('right', '', true); SFX.whoosh();
+        const spin = w.k === 'hammer' || w.k === 'sword';
+        await tween(320, t => { at(s, 58 + (MX - 58) * t, 40 + (MY - 40) * t - Math.sin(Math.PI * t) * (w.k === 'arrow' ? 1 : 5)); s.style.rotate = (spin ? 720 * t : 0) + 'deg'; });
+        if (w.k === 'wand') for (let i = 0; i < 5; i++) puff(scene, MX, MY, 3, '#ffd166', 500, rnd(-5, 5), rnd(-5, 5));
+        s.remove(); shooter.set('right', '', false); hitFx(n, lv); await sleep(380);
+      }
+    };
+    await strike(30, 70); await strike(40, 30); SFX.drum(10); await sleep(300);
+    await strike(25, 5);
+    // 只剩一點點血：怪獸搖搖晃晃，最後一擊之前先閃光
+    const big = at(el('div', 'big', '!'), 80, 15); big.style.fontSize = U(9); scene.append(big);
+    monster.classList.remove('idle');
+    anim(monster, [{ rotate: '0deg' }, { rotate: '-4deg' }, { rotate: '4deg' }, { rotate: '0deg' }], 900);
+    SFX.drum(14); await sleep(900); big.remove();
+    await revealFlash(scene);
+    const ok = k === ans;
+    if (ok) {
+      flash(scene); noise(.5, .5, 2000); hp.style.width = '0%';
+      debris(scene, MX, MY, 20, ['#fff3c4', '#ffd166', '#b79cff']);
+      await anim(monster, [{ transform: 'none', opacity: 1 }, { transform: 'translate(4cqw, -3cqw) rotate(15deg)', offset: .3 }, { transform: 'translate(40cqw, -40cqw) rotate(540deg) scale(.2)', opacity: 0 }], 1000, { easing: 'ease-in' });
+      SFX.win(); confetti(scene);
+      (kind === 'hero' ? [heroes[k]] : kind === 'weapon' ? [shooter] : []).forEach(h => h.cheer());
+      stamp(scene, true, '打倒怪獸！');
+    } else {
+      // 怪獸回血、變大、吼一聲把我方震開
+      hp.classList.add('heal'); hp.style.width = '100%'; tone(200, .8, 'sawtooth', .08, 0, 90);
+      for (let i = 0; i < 8; i++) { const h = at(el('div', 'heart', '+'), MX + rnd(-10, 10), MY + rnd(-6, 10)); scene.append(h); anim(h, [{ transform: 'none', opacity: 1 }, { transform: 'translateY(-10cqw)', opacity: 0 }], 1000).then(() => h.remove()); }
+      await anim(monster, [{ scale: 1 }, { scale: 1.2 }, { scale: 1.12 }], 700);
+      SFX.boom(); shake();
+      const victims = kind === 'hero' ? heroes : kind === 'weapon' ? [shooter] : [];
+      victims.forEach(h => { h.set('stand', 'scared'); anim(h.e, [{ transform: 'none' }, { transform: 'translateX(-3cqw) rotate(-12deg)' }, { transform: 'translateX(-2cqw)' }], 500); });
+      if (shooter && kind === 'bullet') anim(shooter, [{ transform: 'none' }, { transform: 'translateX(-4cqw) rotate(-20deg)' }], 500);
+      await sleep(500); stamp(scene, false, '怪獸回血了！');
+    }
+    return { ok, k };
+  } },
+];
+const [BOMB, RACE, GACHA, LAUNCH, FISHING, BOSS] = SIX;
+// 這六個遊戲畫面只放得下四個短選項（每個最多 6 個字）
+SIX.forEach(gm => {
+  gm.fits = q => q.k === 'mc' && q.o.length === 4 && Math.max(...q.o.map(o => o.length)) <= 6;
+  const play = gm.play; gm.play = (sc, opts, ans) => { SZ = sizeOf(opts); return play.call(gm, sc, opts, ans); };
+});
+
+
 /* ======================================================================
    洞穴大冒險：四個關卡（用「最後一刻揭曉」的遊戲，換成洞穴場景）＋魔王洞
    關卡答對拿寶石；寶石越多，打魔王的傷害越高。魔王戰答對才打得到，答錯會被反擊扣愛心。
    ====================================================================== */
 const PXC = v => v * .625; // 背景像素 → cqw
-const ROOM_TF = [
-  { game: OX, name: '機關翻板廳', intro: '地板藏著機關！站到對的那一邊，錯的那邊地板會翻下去。' },
-  { game: BRIDGE, name: '地底峽谷', intro: '兩座吊橋，上面是 O、下面是 X，只有一座走得過去。' },
-];
-const ROOM_MC = [
-  { game: TRAIN, name: '礦坑列車', intro: '接上寫著正確答案的礦車，才能穿過隧道！' },
-  { game: LOCK, name: '寶藏石門', intro: '四把鑰匙只有一把打得開石門。' },
+/* ---------- 追趕怪獸（從送貨到府改）：坐上寫著正確答案的車，去追偷走寶石袋的小怪獸 ---------- */
+const CHASE = { id: 'chase', name: '🛒 追趕怪獸', how: '小怪獸偷走寶石袋逃跑了！坐上寫著正確答案的車去追，追上了才拿得回來。',
+  async play(scene, opts, ans) {
+    scene.className = 'scene s-chase'; setBG(scene, 'chase');
+    const GY = 35, RAIL = 46.6, VW = 19.2, VH = 12, XS = [14, 38, 62, 86];
+    const road = at(size(el('div', 'road'), 100, 27.5), 0, GY); road.style.backgroundImage = `url(${sp('caveRoad')})`; scene.append(road);
+    const pillars = [8, 48, 88].map(x => { const pl = img(sp('pillar'), x, 0, 7.5, 37.5, 'pillar'); scene.append(pl); return pl; });
+    // 小怪獸抱著寶石袋從左邊跑過去
+    const mon = at(size(el('div', 'chasemon'), 12, 10.4), -14, RAIL - 10.4); mon.append(pimg(MON[1])); scene.append(mon);
+    const sack = img(sp('sack'), 0, 0, 5, 5, 'sack'); mon.append(sack); sack.style.left = '58%'; sack.style.top = '30%';
+    const run1 = mon.animate([{ translate: '0 0' }, { translate: '0 -1cqw' }, { translate: '0 0' }], { duration: T(220), iterations: Infinity });
+    await tween(900, t => at(mon, -14 + 56 * t, RAIL - 10.4));
+    const b = at(el('div', 'bubble', '寶石袋是我的！'), 48, RAIL - 13); scene.append(b); tone(700, .1, 'square', .05); tone(900, .1, 'square', .05, 120);
+    await sleep(900); b.remove();
+    await tween(800, t => at(mon, 42 + 70 * t, RAIL - 10.4), ease.in);
+    // 四台車
+    const rides = XS.map((x, i) => { const r = img(sp('rides')[i], x - VW / 2, RAIL - VH, VW, VH, 'ride'); scene.append(r); anim(r, [{ opacity: 0, translate: '0 2cqw' }, { opacity: 1, translate: '0 0' }], 300); return r; });
+    const names = XS.map((x, i) => { const n = at(el('div', 'ridename', sp('rideNames')[i]), x, RAIL + 1.2); scene.append(n); return n; });
+    const tags = opts.map((o, i) => lbl(o, XS[i], 6, 22.5));
+    scene.append(...tags);
+    const k = await choose(scene, tags); SFX.click();
+    hide(tags.filter((_, i) => i !== k)); hide(rides.filter((_, i) => i !== k)); hide(names);
+    // 主角跑過來跳上車
+    const car = rides[k], cx0 = XS[k] - VW / 2;
+    const kid = new Actor(scene, '你', -6, RAIL, .5); kid.p = { ...kid.p, accessory: 'cap' }; kid.key = '你cap'; kid.render(); kid.e.style.zIndex = 8;
+    await kid.walkTo(XS[k] - 2, Math.abs(XS[k] + 4) * 18);
+    SFX.pop(); await tween(280, t => kid.move(XS[k] - 2, RAIL - Math.sin(Math.PI * t) * 6 - 5.5 * t));
+    hide([tags[k]]);
+    const tg = at(el('div', 'cartag below', esc(opts[k])), XS[k], RAIL + .8); scene.append(tg);
+    kid.say('追！', 700); SFX.sputter();
+    // 開到左邊起跑點
+    const parts = () => [car, kid.e, tg];
+    let vx = cx0; const place = x => { vx = x; at(car, x, RAIL - VH); kid.move(x + VW / 2 - 2, RAIL - 5.5); at(tg, x + VW / 2, RAIL + .8); };
+    await tween(Math.abs(cx0 - 6) * 18 + 300, t => place(cx0 + (6 - cx0) * ease.io(t)));
+    // 追逐：地面和柱子往後退，車子上下顛
+    const bob = car.animate([{ translate: '0 0' }, { translate: '0 -.4cqw' }, { translate: '0 0' }], { duration: T(200), iterations: Infinity });
+    let off = 0; const scroll = d => { off += d; road.style.backgroundPositionX = U(-off % 100); pillars.forEach((pl, i) => at(pl, ((i * 40 - off * 1.3) % 120 + 120) % 120 - 10, 0)); };
+    at(mon, 104, RAIL - 10.4);
+    await tween(1600, t => { scroll(1.6); place(6 + 14 * t); at(mon, 104 - 26 * ease.out(t), RAIL - 10.4); if (Math.random() < .08) noise(.06, .1, 400); });
+    kid.say('快追上了！', 1000);
+    SFX.drum(12);
+    await tween(1800, t => { scroll(1.8); place(20 + 22 * t); at(mon, 78 + Math.sin(t * 12) * 1.5, RAIL - 10.4); });
+    await revealFlash(scene);
+    const ok = k === ans;
+    if (ok) {
+      await tween(500, t => { scroll(2.2); place(42 + 18 * t); });
+      bob.cancel(); run1.cancel(); SFX.clink();
+      // 一把抓回寶石袋，小怪獸跌倒
+      const sx = 78 + 3.5, sy = RAIL - 7;
+      sack.remove(); const s2 = img(sp('sack'), sx, sy, 5, 5, 'sack fx'); scene.append(s2);
+      await tween(450, t => at(s2, sx + (vx + VW / 2 - sx) * t, sy - Math.sin(Math.PI * t) * 8 + (RAIL - VH - 6 - sy) * t));
+      anim(mon, [{ rotate: '0deg', translate: '0 0' }, { rotate: '-80deg', translate: '2cqw 2cqw' }], 400, { easing: 'ease-in' });
+      for (let i = 0; i < 10; i++) { const g = img(sp('gem'), vx + VW / 2, RAIL - VH - 4, 2.6, 2.6, 'fx'); scene.append(g); const dx = rnd(-14, 14); g.animate([{ transform: 'none' }, { transform: `translate(${dx * .5}cqw, -10cqw)`, offset: .45 }, { transform: `translate(${dx}cqw, 4cqw)`, opacity: 0 }], { duration: T(rnd(900, 1300)), fill: 'forwards' }); }
+      SFX.win(); confetti(scene); kid.set('cheer', 'happy', true); kid.say('拿回來了！', 1500);
+      stamp(scene, true, '追到了！', 14);
+    } else {
+      // 車子拋錨冒煙，小怪獸跑掉
+      bob.cancel(); SFX.sputter();
+      for (let i = 0; i < 8; i++) puff(scene, vx + rnd(2, VW - 2), RAIL - VH + 2, rnd(4, 7), pick(['#d3d1e6', '#8b8aa3', '#5d5a77']), 1200, rnd(-2, 2), -6);
+      await tween(900, t => { scroll(1.8 * (1 - t)); place(42 + 6 * ease.out(t)); });
+      anim(car, [{ rotate: '0deg' }, { rotate: '-6deg' }], 300);
+      kid.set('stand', 'sad');
+      const b2 = at(el('div', 'bubble', '抓不到我！'), 82, RAIL - 13); scene.append(b2);
+      await sleep(600); b2.remove();
+      await tween(900, t => at(mon, 78 + 40 * t, RAIL - 10.4), ease.in);
+      SFX.lose(); stamp(scene, false, '被牠逃走了！', 14);
+    }
+    return { ok, k };
+  } };
+const G_BOMB = SIX.find(g => g.id === 'bomb'), G_FISH = SIX.find(g => g.id === 'fish');
+// 洞穴關卡：前面先放是非題的關卡，其餘每次隨機挑；「追趕怪獸」抽到的話放在最後一關（追到魔王洞門口）
+const ROOMS = [
+  { game: OX, kind: 'tf', icon: 'ox', name: '機關翻板廳', intro: '地板藏著機關！站到對的那一邊，錯的那邊地板會翻下去。' },
+  { game: BRIDGE, kind: 'tf', icon: 'bridge', name: '地底峽谷', intro: '兩座吊橋，上面是 O、下面是 X，只有一座走得過去。' },
+  { game: TRAIN, kind: 'mc', icon: 'train', name: '礦坑列車', intro: '接上寫著正確答案的車廂，才能穿過隧道！' },
+  { game: LOCK, kind: 'mc', icon: 'lock', name: '寶藏石門', intro: '四把鑰匙只有一把打得開石門。' },
+  { game: LAB, kind: 'mc', icon: 'lab', name: '地底煉金室', intro: '把寫著正確答案的藥水倒進燒瓶，倒錯會爆炸！' },
+  { game: SAFE, kind: 'mc', icon: 'safe', name: '古代金庫', intro: '四張紙條只有一張是金庫的密碼。' },
+  { game: G_BOMB, kind: 'mc', icon: 'bomb', name: '礦坑炸藥庫', intro: '炸藥的引信點著了！剪斷寫著正確答案的那條線。' },
+  { game: G_FISH, kind: 'mc', icon: 'fish', name: '地底湖', intro: '湖裡有寶石魚！把魚鉤丟向寫著正確答案的魚影。' },
+  { game: CHASE, kind: 'mc', icon: 'chase', name: '追趕小怪獸', intro: '小怪獸偷走了寶石袋！坐上寫著正確答案的車去追牠。' },
 ];
 const BOSS_NAME = '洞穴大魔王';
 const BOSS_HP = 120, HEARTS = 3;
@@ -907,27 +1416,25 @@ function hud() {
   $('#hearts').innerHTML = Array.from({ length: HEARTS }, (_, i) => `<img class="px" alt="" src="${sp(run && i >= run.hearts ? 'hEmpty' : 'hFull')}">`).join('');
   $('#hearts').setAttribute('aria-label', `愛心 ${run ? run.hearts : HEARTS}`);
 }
-// 依題目數量排四個關卡：是非題不夠就換成選擇題的關卡，反過來也一樣
-function planRooms(tf, mc, per) {
-  const want = [ROOM_TF[0], ROOM_TF[1], ROOM_MC[0], ROOM_MC[1]], rooms = [];
-  let nt = tf.length, nm = mc.length;
-  want.forEach((r, i) => {
-    const isTF = ROOM_TF.includes(r);
-    let room = r;
-    if (isTF && nt < per && nm >= per) room = { ...ROOM_MC[i % 2], name: ['深層礦坑', '秘密石門'][i % 2] };
-    else if (!isTF && nm < per && nt >= per) room = { ...ROOM_TF[i % 2], name: ['機關迴廊', '深谷吊橋'][i % 2] };
-    const kind = ROOM_TF.some(t => t.game === room.game) ? 'tf' : 'mc';
-    if (kind === 'tf') nt -= per; else nm -= per;
-    rooms.push({ ...room, kind });
-  });
-  return rooms;
+// 排四個關卡：每關一種不同的遊戲。是非題夠的話前兩關放翻板和吊橋；其餘從選擇題關卡隨機挑題目夠的
+const fitsR = (r, q) => q.k === r.kind && (!r.game.fits || r.game.fits(q));
+function planRooms(qs, per) {
+  const used = new Set(), take = r => shuffle(qs.filter(q => fitsR(r, q) && !used.has(q.key)));
+  const enough = r => take(r).length >= per;
+  let rooms = [];
+  for (const r of shuffle(ROOMS.filter(r => r.kind === 'tf'))) if (rooms.length < 2 && enough(r)) { rooms.push(r); take(r).slice(0, per).forEach(q => used.add(q.key)); }
+  const force = (location.hash || '').slice(1); // 測試用：網址加 #chase 這類代號，一定會出那一關
+  for (const r of shuffle(ROOMS.filter(r => r.kind === 'mc')).sort((a, b) => (b.icon === force) - (a.icon === force))) if (rooms.length < 4 && enough(r)) { rooms.push(r); take(r).slice(0, per).forEach(q => used.add(q.key)); }
+  // 題目太少：放寬成可以重複出題
+  for (const r of shuffle(ROOMS)) if (rooms.length < 4 && !rooms.includes(r) && qs.some(q => fitsR(r, q))) rooms.push(r);
+  rooms = rooms.filter(r => r.game !== CHASE).concat(rooms.filter(r => r.game === CHASE));
+  used.clear();
+  return rooms.map(r => { const pool = take(r), list = []; for (let i = 0; i < per; i++) { const q = pool.shift() || pick(qs.filter(q => fitsR(r, q))); used.add(q.key); list.push(q); } return { ...r, qs: list, got: 0 }; });
 }
 function start() {
-  const tf = shuffle(POOLQ.filter(q => q.k === 'tf')), mc = shuffle(POOLQ.filter(q => q.k === 'mc'));
-  if (!tf.length && !mc.length) return renderSetup();
-  const rooms = planRooms(tf, mc, sel.per);
-  rooms.forEach(r => { const src = r.kind === 'tf' ? tf : mc; r.qs = []; for (let i = 0; i < sel.per; i++) r.qs.push(src.length ? src.shift() : pick(POOLQ.filter(q => q.k === r.kind))); r.got = 0; });
-  run = { rooms, at: 0, gems: 0, hearts: HEARTS, bossHP: BOSS_HP, rest: shuffle([...tf, ...mc]), used: new Set(), total: 0, score: 0, wrong: [], tries: 1 };
+  if (!POOLQ.length) return renderSetup();
+  const rooms = planRooms(POOLQ, sel.per);
+  run = { rooms, at: 0, gems: 0, hearts: HEARTS, bossHP: BOSS_HP, rest: shuffle(POOLQ), used: new Set(), total: 0, score: 0, wrong: [], tries: 1 };
   document.body.classList.add('playing'); $('#setup').hidden = true; hud();
   mapWalk(-1, 0);
 }
@@ -942,6 +1449,8 @@ function drawMap(sc) {
     const [x, y] = ART.MAP.NODES[i + 1], done = run && i < run.at, cur = run && i === run.at;
     const lab = at(el('div', 'node' + (done ? ' done' : '') + (cur ? ' cur' : '') + (i === 4 ? ' boss' : ''), `<b>${i === 4 ? '魔王' : i + 1}</b>${esc(n)}${done ? ` <span class="got">${('<img class="px" alt="" src="' + sp('gem') + '">').repeat(run.rooms[i].got)}</span>` : ''}`), PXC(x), PXC(y) - (i === 4 ? 11.5 : 9));
     sc.append(lab);
+    const ic = run && i < 4 && sp('motif')[run.rooms[i].icon];
+    if (ic) { const m = pimg(ic); m.className = 'px motif'; sc.append(m); m.onload = () => { size(m, m.naturalWidth * .62, m.naturalHeight * .62); at(m, PXC(x) - m.naturalWidth * .31, PXC(y) + 1.2 - m.naturalHeight * .31); }; }
   });
   return sc;
 }
@@ -1226,7 +1735,8 @@ async function renderSetup() {
     ${chips('per', [[2, '每關 2 題'], [3, '每關 3 題']], '關卡')}
     <p class="small" id="avail">題目讀取中…</p>
     <div class="row"><button type="button" class="go" id="start" disabled>出發探險</button></div>
-    <div class="games">${[...ROOM_TF, ...ROOM_MC].map((r, i) => `<div><b>${['第 1 關', '第 2 關', '第 3 關', '第 4 關'][i]}・${r.name}</b>${r.intro}</div>`).join('')}<div><b>魔王洞・${BOSS_NAME}</b>選砲彈、武器或咒語攻擊。閃光之後才知道打中了沒有！</div></div>
+    <p class="small">每次冒險從下面九個洞穴關卡挑四個不同的（有是非題時先過翻板廳和峽谷），最後是魔王洞。</p>
+    <div class="games">${ROOMS.map(r => `<div><b>${r.name}</b><span class="for">${r.kind === 'tf' ? '是非題' : '選擇題'}</span>${r.intro}</div>`).join('')}<div><b>魔王洞・${BOSS_NAME}</b><span class="for">是非、選擇都有</span>選砲彈、武器或咒語攻擊。閃光之後才知道打中了沒有！</div></div>
     <p class="small">題目來自複習小書的是非題和選擇題；答錯的題目會收進錯題本，和複習小書共用。</p>`;
   S.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
     const k = b.dataset.k; sel[k] = k === 'per' ? +b.dataset.v : b.dataset.v;
