@@ -36,9 +36,9 @@ jobs:
           grep -q "app.js?v=$v" _site/index.html
           sed -i "s#assets/spy.css\"#assets/spy.css?v=$v\"#; s#assets/spy.js\"#assets/spy.js?v=$v\"#; s#assets/people/people-sprites.js\"#assets/people/people-sprites.js?v=$v\"#; s#assets/people/people.js\"#assets/people/people.js?v=$v\"#" _site/spy.html
           grep -q "spy.js?v=$v" _site/spy.html
-          sed -i "s#assets/games/games.css\"#assets/games/games.css?v=$v\"#; s#assets/games/art.js\"#assets/games/art.js?v=$v\"#; s#assets/games/games.js\"#assets/games/games.js?v=$v\"#; s#assets/people/people-sprites.js\"#assets/people/people-sprites.js?v=$v\"#; s#assets/people/people.js\"#assets/people/people.js?v=$v\"#" _site/games.html
+          sed -i "s#assets/games/games.css\"#assets/games/games.css?v=$v\"#; s#assets/games/art.js\"#assets/games/art.js?v=$v\"#; s#assets/games/games-core.js\"#assets/games/games-core.js?v=$v\"#; s#assets/games/games.js\"#assets/games/games.js?v=$v\"#; s#assets/people/people-sprites.js\"#assets/people/people-sprites.js?v=$v\"#; s#assets/people/people.js\"#assets/people/people.js?v=$v\"#" _site/games.html
           grep -q "games.js?v=$v" _site/games.html
-          sed -i "s#assets/games/games.css\"#assets/games/games.css?v=$v\"#; s#assets/games/art.js\"#assets/games/art.js?v=$v\"#; s#assets/cave/cave.css\"#assets/cave/cave.css?v=$v\"#; s#assets/cave/cave-art.js\"#assets/cave/cave-art.js?v=$v\"#; s#assets/cave/cave.js\"#assets/cave/cave.js?v=$v\"#; s#assets/people/people-sprites.js\"#assets/people/people-sprites.js?v=$v\"#; s#assets/people/people.js\"#assets/people/people.js?v=$v\"#" _site/cave.html
+          sed -i "s#assets/games/games.css\"#assets/games/games.css?v=$v\"#; s#assets/games/art.js\"#assets/games/art.js?v=$v\"#; s#assets/games/games-core.js\"#assets/games/games-core.js?v=$v\"#; s#assets/cave/cave.css\"#assets/cave/cave.css?v=$v\"#; s#assets/cave/cave-art.js\"#assets/cave/cave-art.js?v=$v\"#; s#assets/cave/cave.js\"#assets/cave/cave.js?v=$v\"#; s#assets/people/people-sprites.js\"#assets/people/people-sprites.js?v=$v\"#; s#assets/people/people.js\"#assets/people/people.js?v=$v\"#" _site/cave.html
           grep -q "cave.js?v=$v" _site/cave.html
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'

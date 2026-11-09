@@ -22,3 +22,13 @@
 - 數學（康軒）：三年級第 1–4 單元、四年級第 1–5 單元（目前只有練習題）
 
 題目為依課程原創的練習題，不是學校正式考卷；實際考試範圍以老師公告為準。
+
+## 程式檔怎麼分
+
+- `assets/app.js`、`assets/style.css`：複習小書首頁（index.html）
+- `assets/spy.js`、`assets/spy.css`：找出間諜（spy.html）
+- `assets/games/games-core.js`：所有答題小遊戲的本體（點陣人物、音效、各種遊戲），小遊戲頁和洞穴大冒險共用
+- `assets/games/games.js`：最後一刻揭曉（games.html）的流程；`assets/cave/cave.js`：洞穴大冒險（cave.html）的流程
+- `assets/games/art.js`、`assets/cave/cave-art.js`：程式畫的點陣圖
+
+儲存庫裡的檔案就是原始檔，直接改這裡即可，不需要另外的合併腳本。
