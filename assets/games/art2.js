@@ -817,6 +817,90 @@
     return P.url();
   }
 
+  /* ================= 小道具（尺寸是舊圖的兩倍，比例一樣，遊戲裡的位置不用改） ================= */
+  // 保險箱 104×116：螢幕框的位置和舊圖一樣（遊戲會把數字疊在上面）
+  function spSafe() {
+    const P = Cv(104, 116, 3);
+    P.rect(0, 0, 104, 112, INK); P.grad(2, 2, 100, 108, ['#6d7c8c', '#5d6b7a', '#4d5a68'], (u, v) => u * .6 + v * .4);
+    P.rect(2, 2, 100, 2, '#a9b7c6'); P.rect(2, 2, 2, 108, '#8a99a9'); P.rect(98, 4, 4, 106, '#3d4856'); P.rect(2, 106, 100, 4, '#3d4856');
+    P.rect(8, 8, 88, 96, INK); P.grad(10, 10, 84, 92, ['#95a4b4', '#8695a5', '#778696', '#6a7888'], (u, v) => u * .5 + v * .5);
+    P.rect(10, 10, 84, 2, '#cfd9e3'); P.rect(10, 10, 2, 92, '#b8c6d4'); P.rect(92, 12, 2, 90, '#56636f'); P.rect(10, 100, 84, 2, '#56636f');
+    [[15, 15], [88, 15], [15, 96], [88, 96], [52, 96]].forEach(([x, y]) => { P.ell(x, y, 2.6, 2.6, '#3d4856'); P.ell(x, y, 1.8, 1.8, '#a9b7c6'); P.set(x - 1, y - 1, '#ffffff'); });
+    [20, 76].forEach(y => { P.rect(3, y, 7, 17, INK); P.rect(4, y + 1, 5, 15, '#7d8c9c'); P.rect(4, y + 1, 2, 15, '#cfd9e3'); P.rect(4, y + 8, 5, 1, '#3d4856'); });
+    P.rect(24, 18, 56, 18, INK); P.rect(26, 20, 52, 14, '#0c1a12'); P.rect(26, 20, 52, 1, '#06100a'); P.rect(23, 36, 58, 1, '#b8c6d4');
+    P.rect(8, 112, 16, 4, INK); P.rect(80, 112, 16, 4, INK); P.rect(10, 112, 12, 2, '#3d4856'); P.rect(82, 112, 12, 2, '#3d4856');
+    return P.url();
+  }
+  function spDial() {
+    const P = Cv(34, 34);
+    P.ell(17, 17, 17, 17, INK); P.ball(17, 17, 15, 15, ['#7d8590', '#a4acb6', '#c9ced6', '#eef1f5'], -.5, -.7, true); P.ell(17, 17, 11.4, 11.4, '#56636f'); P.ball(17, 17, 10.4, 10.4, ['#8a99a9', '#b0bcc8', '#d9dee6', '#ffffff']);
+    for (let a = 0; a < 360; a += 30) { const r = a * Math.PI / 180; P.rect(Math.round(16.5 + Math.cos(r) * 13) , Math.round(16.5 + Math.sin(r) * 13), 2, 2, INK); }
+    for (let a = 15; a < 360; a += 30) { const r = a * Math.PI / 180; P.set(17 + Math.cos(r) * 13.2, 17 + Math.sin(r) * 13.2, '#3d4856'); }
+    P.rect(16, 2, 2, 9, '#d6334a'); P.rect(16, 2, 1, 9, '#ff8a8a'); P.ell(17, 17, 3.4, 3.4, INK); P.ell(17, 17, 2, 2, '#56636f'); P.set(16, 16, '#cfd9e3');
+    return P.url();
+  }
+  function spHandle() {
+    const P = Cv(34, 34);
+    P.rect(15, 2, 4, 30, '#d9dee6'); P.rect(15, 2, 1, 30, '#ffffff'); P.rect(18, 2, 1, 30, '#8a99a9'); P.rect(2, 15, 30, 4, '#d9dee6'); P.rect(2, 15, 30, 1, '#ffffff'); P.rect(2, 18, 30, 1, '#8a99a9');
+    [[17, 3], [17, 31], [3, 17], [31, 17]].forEach(([x, y]) => P.ball(x, y, 3, 3, ['#a12a3c', '#e8414f', '#ff8a8a', '#ffd0d0']));
+    P.ball(17, 17, 5.5, 5.5, ['#c98a00', '#f2b632', '#ffd166', '#fff3c4']); P.ell(17, 17, 1.6, 1.6, '#7a4e00');
+    P.outline();
+    return P.url();
+  }
+  // 貨車 96×52（車頭朝右）
+  function spTruck() {
+    const P = Cv(96, 52, 9);
+    // 貨櫃
+    P.rect(0, 4, 64, 38, INK); P.grad(2, 6, 60, 34, ['#ffffff', '#fffaf0', '#f2ecdf', '#e0d9cc'], (u, v) => v); P.rect(2, 36, 60, 4, '#cfc8ba');
+    for (let x = 12; x < 62; x += 10) P.rect(x, 7, 1, 29, '#e6dfd0');
+    P.rect(8, 14, 48, 16, '#c85a10'); P.rect(8, 14, 48, 14, '#ff7a1a'); P.rect(8, 14, 48, 2, '#ffa95a'); for (let x = 14; x < 52; x += 10) { P.rect(x, 18, 6, 8, '#fffaf0'); P.rect(x, 18, 6, 1, '#ffffff'); }
+    // 車頭
+    P.rect(64, 12, 30, 30, INK); P.poly([[66, 14], [84, 14], [92, 24], [92, 40], [66, 40]], '#3c8dde'); P.rect(66, 14, 18, 2, '#78c3f0'); P.rect(66, 34, 26, 6, '#2a6cb4'); P.rect(66, 14, 2, 26, '#5aa6ea');
+    P.poly([[74, 17], [83, 17], [89, 25], [89, 28], [74, 28]], INK); P.poly([[76, 19], [82, 19], [87, 26], [76, 26]], '#cfeeff'); P.poly([[76, 19], [80, 19], [77, 24], [76, 24]], '#ffffff');
+    P.rect(70, 30, 4, 1, INK); P.rect(90, 30, 4, 4, '#ffd166'); P.rect(90, 30, 4, 1, '#fff3c4'); P.rect(88, 38, 8, 4, '#8b8aa3'); P.rect(88, 38, 8, 1, '#d3d1e6');
+    P.rect(0, 40, 96, 4, INK); P.rect(2, 41, 86, 1, '#5d5a77');
+    [16, 76].forEach(x => { P.ell(x, 44, 8, 8, INK); P.ball(x, 44, 6.4, 6.4, ['#2a2640', '#3a3550', '#4a4766', '#5d5a77']); P.ball(x, 44, 3.4, 3.4, ['#8b8aa3', '#a7a4c4', '#d3d1e6', '#ffffff']); P.set(x, 44, INK); });
+    return P.url();
+  }
+  const wood = (P, x, y, w, h) => { P.rect(x, y, w, h, INK); P.grad(x + 2, y + 2, w - 4, h - 4, ['#dca066', '#c98a4b', '#b47a40'], (u, v) => v); P.rect(x + 2, y + 2, w - 4, 2, '#f0bc84'); P.rect(x + 2, y + h - 4, w - 4, 2, '#8a5a32'); };
+  function spCrate() {
+    const P = Cv(32, 28); wood(P, 0, 0, 32, 28);
+    P.rect(2, 12, 28, 5, '#9a6a3f'); P.rect(2, 12, 28, 1, '#b47a40'); P.rect(14, 2, 5, 24, '#9a6a3f'); P.rect(14, 2, 1, 24, '#b47a40');
+    P.rect(11, 11, 11, 7, '#a12a3c'); P.rect(12, 12, 9, 5, '#e8414f'); P.rect(12, 12, 9, 1, '#ff8a8a');
+    [[4, 4], [27, 4], [4, 23], [27, 23]].forEach(([x, y]) => { P.set(x, y, '#6e4a2a'); P.set(x, y - 1, '#f0bc84'); });
+    return P.url();
+  }
+  // 鎖 40×48：open 時鎖頭往右上打開
+  function spLock(open) {
+    const P = Cv(40, 48), cx = open ? 30 : 20, cy = open ? 12 : 20;
+    for (let a = 180; a <= 360; a += 1) { const r = a * Math.PI / 180; for (let k = 0; k < 6; k++) P.set(cx + Math.cos(r) * (13 - k), cy + Math.sin(r) * (14 - k) + (open ? 2 : 0), k === 0 || k === 5 ? INK : k < 3 ? '#e6e4f5' : '#a7a4c4'); }
+    if (open) { P.rect(38, 12, 2, 8, INK); P.rect(17, 14, 6, 8, INK); P.rect(18, 14, 4, 8, '#a7a4c4'); } else { P.rect(7, 20, 6, 3, INK); P.rect(27, 20, 6, 3, INK); P.rect(8, 20, 2, 3, '#e6e4f5'); P.rect(10, 20, 2, 3, '#a7a4c4'); P.rect(28, 20, 2, 3, '#e6e4f5'); P.rect(30, 20, 2, 3, '#a7a4c4'); }
+    P.rect(2, 20, 36, 28, INK); P.grad(4, 22, 32, 24, ['#ffe08a', '#ffd166', '#f2b632', '#d49a1e'], (u, v) => v); P.rect(4, 22, 32, 2, '#fff3c4'); P.rect(4, 22, 2, 24, '#ffe9a8'); P.rect(4, 42, 32, 4, '#c98a00'); P.rect(34, 24, 2, 20, '#d49a1e');
+    P.ell(20, 31, 4.4, 4.4, INK); P.rect(18, 32, 4, 9, INK); P.set(19, 29, '#5d5a77');
+    return P.url();
+  }
+  function spKey(c, d) {
+    const P = Cv(44, 18), lt = mix(c, '#ffffff', .6);
+    P.ball(9, 9, 8, 8, [d, mix(c, d, .5), c, lt]); P.ell(9, 9, 3.2, 3.2, INK); P.set(5, 4, '#ffffff'); P.set(6, 4, '#ffffff');
+    P.rect(16, 7, 26, 4, c); P.rect(16, 7, 26, 1, lt); P.rect(16, 10, 26, 1, d);
+    P.rect(30, 11, 4, 5, c); P.rect(30, 11, 1, 5, lt); P.rect(37, 11, 4, 4, c); P.rect(37, 11, 1, 4, lt); P.rect(30, 15, 4, 1, d); P.rect(37, 14, 4, 1, d);
+    P.outline(); P.ell(9, 9, 3.2, 3.2, INK);
+    return P.url();
+  }
+  // 發射台 44×12、發射塔 12×72
+  function spPad() {
+    const P = Cv(44, 12); P.rect(0, 0, 44, 12, INK); P.rect(2, 2, 40, 8, '#8b8aa3'); P.rect(2, 2, 40, 2, '#d3d1e6'); P.rect(2, 8, 40, 2, '#5d5a77');
+    for (let y = 4; y < 8; y++) for (let x = 6; x < 38; x++) P.set(x, y, ((x + (y - 4)) >> 2) % 2 ? INK : '#ffd166');
+    return P.url();
+  }
+  function spTower() {
+    const P = Cv(12, 72);
+    for (let y = 0; y < 72; y += 8) { P.line(1, y, 10, y + 8, '#8b8aa3'); P.line(10, y, 1, y + 8, '#6b6880'); P.rect(0, y, 12, 2, '#a7a4c4'); P.rect(0, y, 12, 1, '#d3d1e6'); }
+    P.rect(0, 0, 2, 72, '#a7a4c4'); P.rect(0, 0, 1, 72, '#d3d1e6'); P.rect(10, 0, 2, 72, '#5d5a77');
+    P.rect(0, 0, 12, 4, '#e8414f'); P.rect(0, 0, 12, 1, '#ff8a8a'); P.rect(0, 3, 12, 1, '#a12a3c');
+    return P.url();
+  }
+
   /* ================= 套用：換背景，角色交給 games-core.js（它會先看 ART.HD） ================= */
   const LANES = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b'];
   ART.BG.boss = bgBoss();
@@ -826,6 +910,8 @@
   ART.BG.rocket = bgRocket();
   ART.BG.fish = bgFish();
   ART.BG.ox = bgOx(); ART.BG.vote = bgVote(); ART.BG.detect = bgDetect(); ART.BG.bridge = bgBridge(); ART.BG.vault = bgVault(); ART.BG.sky = bgSky();
+  Object.assign(ART.SP, { safe: spSafe(), dial: spDial(), handle: spHandle(), truck: spTruck(), crate: spCrate(), lockC: spLock(false), lockO: spLock(true), pad: spPad(), tower: spTower(),
+    keys: [['#ffd166', '#c98a00'], ['#d3d1e6', '#8b8aa3'], ['#ff9b6b', '#c45a2a'], ['#8fe0a2', '#3e8f3a']].map(([c, d]) => spKey(c, d)) });
   ART.BG.door = bgDoor(); ART.BG.rail = bgRail(); ART.BG.roof = bgRoof(); ART.BG.lab = bgLab();
   ART.HD = {
     Cv, Mask, paint, mix, rampOf,
