@@ -69,7 +69,7 @@ svg.ov { inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: vi
 .part { z-index: 30; pointer-events: none }
 .puff { border-radius: 50%; z-index: 12; pointer-events: none; translate: -50% -50% }
 .bubble { z-index: 25; translate: -50% -100%; background: var(--paper); border: .5cqw solid var(--ink); padding: .2cqw 1.2cqw; font-weight: 900; font-size: 3.4cqw; white-space: nowrap; pointer-events: none }
-.bubble::after { content: ""; position: absolute; left: 50%; bottom: -1.6cqw; border: .8cqw solid transparent; border-top-color: var(--ink); translate: -50% 0 }
+.bubble::after { content: ""; position: absolute; left: calc(50% + var(--tail, 0cqw)); bottom: -1.6cqw; border: .8cqw solid transparent; border-top-color: var(--ink); translate: -50% 0 }
 .sweat { z-index: 9; width: 1.6cqw; height: 2.4cqw; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #8ccdf3; border: .3cqw solid #1d1b2e; animation: sweat .6s ease-in infinite }
 @keyframes sweat { from { transform: translateY(0); opacity: 1 } to { transform: translateY(3cqw); opacity: 0 } }
 .actor { z-index: 8; translate: -50% -100% }
@@ -77,7 +77,7 @@ svg.ov { inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: vi
 
 /* 1 拆炸彈 */
 .s-bomb { background-color: #3a3550 }
-.wire { fill: none; stroke-width: 1.7; stroke-linecap: round }
+.wire { fill: none; stroke-width: 1.7; stroke-linecap: round } .wire.wo { stroke: #1d1b2e; stroke-width: 2.5 } .wire.wm { stroke-width: 1.15; transform: translateY(-.28px) } .wire.wh { stroke-width: .32; transform: translateY(-.6px) }
 .bomb { left: 6cqw; top: 12.4cqw; width: 26.25cqw; height: 28.75cqw; z-index: 5 }
 .bomb > img { width: 100%; height: 100% }
 .bomb .lcd { position: absolute; left: 50%; top: 58%; translate: -50% -50%; padding: .8cqw 1.4cqw; background: #120808; border: .6cqw solid #5d5a77; font-family: var(--pixel); font-size: 3.4cqw; color: #ff4141; text-shadow: 0 0 1.4cqw #ff2020; letter-spacing: .1em; font-variant-numeric: tabular-nums; white-space: nowrap }
@@ -283,7 +283,7 @@ body.wide #setup { grid-column: 1 / -1 }
 .games { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)) }
 
 /* ===== 點陣紙張字卡 ===== */
-.pp { border: .9cqw solid transparent !important; border-image: var(--pp-frame) 3 / .9cqw round !important; background: var(--pp-tex) 0 0 / 2.5cqw 2.5cqw, #fffaf0; image-rendering: pixelated; box-shadow: none !important; filter: drop-shadow(.45cqw .55cqw 0 rgba(29,27,46,.5)) }
+.pp { border: .9cqw solid transparent !important; border-image: var(--pp-frame) 3 / .9cqw round !important; background: #fffaf0; image-rendering: pixelated; box-shadow: none !important; filter: drop-shadow(.45cqw .55cqw 0 rgba(29,27,46,.5)) }
 .pp:hover { background-color: #fff3c4 }
 .pp.chosen { background-color: var(--gold) }
 .vcard.pp.win { outline: .7cqw solid var(--ok); background-color: #e3f7e8 }

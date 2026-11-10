@@ -538,7 +538,7 @@ function pixShaded(rows, pal, skip) {
   });
   SP.frame = frame('#fffaf0', '#d9cfb4', '#ffffff');
   SP.tex = canvas(8, 8, P => { [[1, 2], [5, 1], [3, 5], [6, 6], [0, 6]].forEach(([x, y]) => P.dot(x, y, 'rgba(120,100,60,.10)')); P.dot(4, 3, 'rgba(255,255,255,.5)'); });
-  SP.texLine = canvas(8, 8, P => { P.rect(0, 7, 8, 1, 'rgba(90,130,200,.22)'); P.dot(2, 3, 'rgba(120,100,60,.08)'); });
+  SP.texLine = canvas(8, 8, P => { P.rect(0, 7, 8, 1, 'rgba(90,130,200,.22)'); });
   const R = document.documentElement.style;
   R.setProperty('--pp-frame', `url(${SP.frame})`); R.setProperty('--pp-tex', `url(${SP.tex})`); R.setProperty('--pp-line', `url(${SP.texLine})`);
 
@@ -614,7 +614,6 @@ function pixShaded(rows, pal, skip) {
     for (let x = 0; x < 160; x += 20) { const hh = 10 + ((x * 7) % 8), c = ['#e8b3a0', '#f2d08a', '#b9d6c0', '#c7b8e8'][(x / 20) % 4]; P.rect(x + 2, 12 - hh + 8, 16, hh, '#1d1b2e'); P.rect(x + 3, 13 - hh + 8, 14, hh - 1, c); for (let y = 15 - hh + 8; y < 18; y += 4) { P.rect(x + 5, y, 3, 2, '#5d5a77'); P.rect(x + 11, y, 3, 2, '#5d5a77'); } }
     P.rect(0, 20, 160, 3, '#d3d1e6'); P.rect(0, 20, 160, 1, '#ffffff'); for (let x = 0; x < 160; x += 8) P.rect(x, 21, 1, 2, '#a7a4c4');
     P.rect(0, 23, 160, 17, '#4a4458'); for (let x = 0; x < 160; x += 16) P.rect(x + 2, 31, 8, 1, '#ffd166');
-    for (let i = 0; i < 120; i++) P.dot(P.R() * 160, 24 + P.R() * 16, '#3f3a4d');
   }, 82);
   SP.truck = canvas(48, 26, P => {
     P.rect(0, 2, 32, 19, '#1d1b2e'); P.rect(1, 3, 30, 17, '#fffaf0'); P.rect(1, 3, 30, 1, '#ffffff'); P.rect(1, 18, 30, 2, '#d9d3e6');
@@ -851,8 +850,6 @@ function pixShaded(rows, pal, skip) {
         } else if (y === top - 1 && rim && top < H) P.dot(x, y, mix(col, '#ffffff', .45));
         else P.dot(x, y, rim ? 'rgba(232,247,255,.8)' : 'rgba(214,238,255,.32)');
       } }
-    // 液體裡的小氣泡
-    if (top < H) for (let i = 0; i < 6; i++) { const y = top + 3 + (P.R() * (H - top - 6) | 0), L = rowL(y), R = rowR(y); const x = L + 3 + (P.R() * Math.max(1, R - L - 6) | 0); if (IN(x, y)) P.dot(x, y, mix(col, '#ffffff', .55)); }
     extra && extra(P, IN, rowL, rowR);
   });
   // 三角燒瓶（照照片：平底圓角、直瓶頸、瓶口外翻、刻度）
@@ -867,7 +864,6 @@ function pixShaded(rows, pal, skip) {
     for (let y = 31; y < 41; y++) { const R = rowR(y); P.dot(R - 2, y, 'rgba(255,255,255,.35)'); }
     for (let x = ECX - 13; x < ECX + 13; x++) P.dot(x, 44, 'rgba(255,255,255,.55)');                            // 厚玻璃底
     [[22, 6], [26, 3], [30, 6], [34, 3], [38, 6]].forEach(([y, l]) => { P.rect(ECX + 2, y, l, 1, 'rgba(255,255,255,.85)'); });
-    P.dot(ECX + 10, 22, 'rgba(255,255,255,.85)'); P.dot(ECX + 10, 30, 'rgba(255,255,255,.85)'); P.dot(ECX + 10, 38, 'rgba(255,255,255,.85)');
   });
   SP.flask = (col, lvl) => { const k = col + lvl; SP._fl = SP._fl || {}; return SP._fl[k] || (SP._fl[k] = flask(col, lvl)); };
   SP.burner = canvas(22, 14, P => { P.rect(2, 0, 18, 2, '#1d1b2e'); P.rect(3, 0, 16, 1, '#8b8aa3'); P.rect(4, 2, 2, 8, '#1d1b2e'); P.rect(16, 2, 2, 8, '#1d1b2e'); P.rect(9, 6, 4, 4, '#1d1b2e'); P.rect(10, 6, 2, 3, '#3c8dde'); P.rect(0, 10, 22, 4, '#1d1b2e'); P.rect(1, 10, 20, 3, '#5d5a77'); P.rect(1, 10, 20, 1, '#a7a4c4'); });
@@ -879,7 +875,6 @@ function pixShaded(rows, pal, skip) {
     for (let y = 3; y < 13; y++) P.dot(RCX - 1, y, 'rgba(255,255,255,.75)');
     for (let a = 200; a <= 255; a += 6) { const r = a * Math.PI / 180; P.dot(Math.round(RCX + Math.cos(r) * 6.6), Math.round(RCY + Math.sin(r) * 6.6), 'rgba(255,255,255,.85)'); }
     for (let a = 150; a <= 190; a += 10) { const r = a * Math.PI / 180; P.dot(Math.round(RCX + Math.cos(r) * 6.6), Math.round(RCY + Math.sin(r) * 6.6), 'rgba(255,255,255,.45)'); }
-    P.dot(6, 17, '#ffffff'); P.dot(14, 25, 'rgba(255,255,255,.5)'); P.dot(13, 26, 'rgba(255,255,255,.35)');
   });
   SP.bottleCols = ['#e8414f', '#3c8dde', '#ffd166', '#8a63e8'];
   SP.bottles = SP.bottleCols.map(c => bottle(c));

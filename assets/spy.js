@@ -49,7 +49,7 @@ function look(key, person, action, i = 0, opt = {}) {
     let rows = layers(person, action, i, opt.prop);
     if (action === 'walk-down' && i === 0) rows = standLegs(rows);
     if (opt.edit) rows = opt.edit(rows.slice(), action);
-    cache.set(k, pix(rows, palOf(person, opt.pal)));
+    cache.set(k, (window.PEOPLE_HD || pix)(rows, palOf(person, opt.pal), !opt.tag));
   }
   return cache.get(k);
 }
@@ -80,7 +80,7 @@ function standArm(person, step, both) {
 // 每個人隨機舉單手或舉雙手（由座號決定，同一人不會中途換）
 const bothOf = seed => rng(seed * 7 + 3)() < 0.5;
 const handCache = new Map();
-const handSrc = (seed, step) => { const k = seed + '|' + step; if (!handCache.has(k)) { const p = crewOf(seed); handCache.set(k, pix(standArm(p, step, bothOf(seed)), palOf(p))); } return handCache.get(k); };
+const handSrc = (seed, step) => { const k = seed + '|' + step; if (!handCache.has(k)) { const p = crewOf(seed); handCache.set(k, (window.PEOPLE_HD || pix)(standArm(p, step, bothOf(seed)), palOf(p), true)); } return handCache.get(k); };
 // 隊伍原地踏步：人換走路的兩格，牌子不動；相鄰的人左右腳錯開
 let stepTick = 0;
 setInterval(() => {
@@ -146,9 +146,9 @@ const IMG = {
   spring: pix(['KKKKKKKKKKKK', 'KYYYYYYYYYYK', 'KKKKKKKKKKKK', '...KQQQQK...', '....KQQK....', '...KQQQQK...', '....KQQK....', '...KQQQQK...', '..KKKKKKKK..', '..KMMMMMMK..'], PAL),
   banana: pix(['.....KK.....', '....KYYK....', '.KKKYYYYKKK.', 'KYYYYKKYYYYK', 'KYYK....KYYK', '.KK......KK.'], { K: '#0d0a16', Y: '#ffd23f' }),
   bubbleIcon: pix(['..KKKKKK..', '.KHHLLLLK.', 'KHWLLLLLLK', 'KHLLLLLLLK', 'KLLLLLLLLK', 'KLLLLLLLLK', 'KLLLLLLLHK', 'KLLLLLLHHK', '.KLLLLLHK.', '..KKKKKK..'], { K: '#0d0a16', L: '#cdeeff', H: '#8fc8ff', W: '#ffffff' }),
-  tornado: [0, 1].map(f => pix(['.KKKKKKKKKKKKKK.', 'KQQHHQQQQHHQQQQK', '.KQQQQHHQQQQHQK.', '..KHQQQQQHHQQK..', '..KQQHHQQQQQHK..', '...KQQQQHHQQK...', '...KHHQQQQQQK...', '....KQQHHQQK....', '....KQQQQHHK....', '.....KHHQQK.....', '.....KQQHHK.....', '......KQQK......', '......KHQK......', '.......KK.......'].map(r => f ? r.replace(/[QH]/g, c => c === 'Q' ? 'H' : 'Q') : r), { K: '#3a3f55', Q: '#b8c0d0', H: '#e8edf5' })),
+  tornado: [0, 1].map(f => pix(['.KKKKKKKKKKKKKK.', 'KQQQQQQQQQQQQQQK', '.KQQQQQQQQQQQQK.', '..KQQQQQQQQQQK..', '..KQQQQQQQQQQK..', '...KQQQQQQQQK...', '...KQQQQQQQQK...', '....KQQQQQQK....', '....KQQQQQQK....', '.....KQQQQK.....', '.....KQQQQK.....', '......KQQK......', '......KQQK......', '.......KK.......'].map((r, i) => ((i + f * 2) >> 1) % 2 ? r.replace(/Q/g, 'H') : r), { K: '#3a3f55', Q: '#b8c0d0', H: '#e8edf5' })),
   vacuum: pix(['..........KKKKKKK...', '.........KYYYYYYYK..', 'KKKK....KYYYYYYYYYK.', 'KQQKKKKKKYYKKKKYYYYK', 'KQQQQQQQQYYKWWKYYYYK', 'KQQKKKKKKYYKKKKYYYYK', 'KKKK....KYYYYYYYYYK.', '.........KYYYYYYYYK.', '.........KKKKKKKKKK.', '..........KK....KK..', '..........KK....KK..', '...........K....K...'], { K: '#0d0a16', Y: '#3fa7d6', Q: '#dfe3ea', W: '#ffcc4d' }),
-  net: pix(['..KKKKKK........', '.KHMHMHMK.......', 'KMHMHMHMHK......', 'KHMHMHMHMK......', 'KMHMHMHMHK......', 'KHMHMHMHMK......', '.KHMHMHMK.......', '..KKKKKKKE......', '.........EE.....', '..........EE....', '...........EE...', '............EE..', '.............EE.', '..............EE', '...............E', '................'], { K: '#0d0a16', H: '#ffffff', M: '#c9c3e6', E: '#8a5a2b' }),
+  net: pix(['..KKKKKK........', '.KHHMHHMK.......', 'KHHHMHHMHK......', 'KMMMMMMMMK......', 'KHHHMHHMHK......', 'KHHHMHHMHK......', '.KMMMMMMK.......', '..KKKKKKKE......', '.........EE.....', '..........EE....', '...........EE...', '............EE..', '.............EE.', '..............EE', '...............E', '................'], { K: '#0d0a16', H: '#ffffff', M: '#c9c3e6', E: '#8a5a2b' }),
   cage: pix(['.......KK.......', '......K..K......', 'KKKKKKKKKKKKKKKK', 'KQQQQQQQQQQQQQQK', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'KQQQQQQQQQQQQQQK', 'KKKKKKKKKKKKKKKK'], { K: '#0d0a16', Q: '#ffcc4d' }),
   pitIcon: pix(['..KKKKKKKK..', '.KEEEEEEEEK.', 'KEffffffffEK', '.KffffffffK.', '..KKKKKKKK..'], PAL),
   eagle: [
@@ -177,13 +177,15 @@ IMG.ufo = [0, 1].map(k => rects(32, 14, [
 IMG.boom = (() => {
   const c = document.createElement('canvas'); c.width = c.height = 16; const g = c.getContext('2d');
   for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
-    const d = Math.hypot(x - 7.5, y - 7.5) + Math.random() * 1.6;
+    const d = Math.hypot(x - 7.5, y - 7.5) + (Math.round((Math.atan2(y - 7.5, x - 7.5) / Math.PI + 1) * 6) % 2) * 1.5;   // 固定的尖角，不用亂數雜點
     if (d > 8) continue;
     g.fillStyle = d < 3 ? '#fff4c2' : d < 5 ? '#ffd166' : d < 6.6 ? '#ff7a1a' : '#d6334a';
     g.fillRect(x, y, 1, 1);
   }
   return c.toDataURL();
 })();
+// 有載到 spy-art.js 就換成乾淨點陣風的新圖（兩倍大、比例相同）
+Object.assign(IMG, window.SPY_ART || {});
 // 太陽與遠方城市
 $('#sun').src = (() => { const m = []; for (let y = 0; y < 12; y++) { let r = ''; for (let x = 0; x < 12; x++) { const d = Math.hypot(x - 5.5, y - 5.5); r += d < 4 ? 'Y' : d < 5.6 ? 'O' : '.'; } m.push(r); } return pix(m, { Y: '#ffe27a', O: '#ffc24a' }); })();
 (() => {
@@ -193,7 +195,7 @@ $('#sun').src = (() => { const m = []; for (let y = 0; y < 12; y++) { let r = ''
     const w = 8 + Math.floor(r() * 12), h = 10 + Math.floor(r() * 24);
     g.fillStyle = '#9fc3e3'; g.fillRect(x, 36 - h, w, h);
     g.fillStyle = '#c4def2';
-    for (let yy = 36 - h + 2; yy < 34; yy += 3) for (let xx = x + 2; xx < x + w - 1; xx += 3) if (r() < .55) g.fillRect(xx, yy, 1, 1);
+    g.fillRect(x, 36 - h, w, 1);   // 只留屋頂一條亮邊，不畫一點一點的窗戶
     x += w + (r() < .3 ? 2 : 0);
   }
   const city = $('#city');
@@ -773,6 +775,39 @@ function startQuestion() {
   q.res = { found: false, fixed: false, shot: null, picked: null };
 }
 
+/* 反轉演出：抓對人時偶爾先演「被間諜躲開了」，再出動真正的方法抓到他（大約三題一次，不會連續兩題）。
+   只在抓對時出現，所以結果不會騙人。window.KR_TWIST = true／false 可以強制開或關（測試用）。 */
+let twistGap = 9;
+function twist(hit) {
+  twistGap++;
+  if (!hit) return false;
+  const on = window.KR_TWIST != null ? !!window.KR_TWIST : twistGap > 1 && Math.random() < .3;
+  if (on) twistGap = 0;
+  return on;
+}
+async function dodge(el) {
+  const p = PX(), t = imgBox(el), W = stage.clientWidth, im = el.querySelector('img');
+  const dir = t.cx > W / 2 ? -1 : 1, hop = `translate(${dir * 13 * p}px,0)`;
+  // 第一發飛彈從斜上方飛來，間諜往旁邊一跳，飛彈打在空地上
+  const m = spr(IMG.missile, 14, 5, 12), w = 14 * p, h = 5 * p;
+  const sx = dir > 0 ? W + 40 : -40, sy = -40, ty = t.b - 3 * p, ang = Math.atan2(ty - sy, t.cx - sx) * 180 / Math.PI + 180;
+  SFX.whistle();
+  const fly = mv(m, [at(sx - w / 2, sy - h / 2, `rotate(${ang}deg)`), at(t.cx - w / 2, ty - h / 2, `rotate(${ang}deg)`)], 750, 'cubic-bezier(.5,0,1,1)');
+  await wait(470);
+  im.src = SPR.spySmug; el.style.zIndex = 5;
+  const side = el.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${dir * 7 * p}px,${-9 * p}px)`, offset: .5 }, { transform: hop }], { duration: T(260), easing: 'ease-out', fill: 'forwards' });
+  await fly; m.remove();
+  SFX.boom(); boomAt(t.cx, ty - 4 * p, 20 * p); shake();
+  $('#mission').innerHTML = '被他躲開了？！';
+  say(t.cx + dir * 13 * p, t.y - 17 * p, '嘿嘿，打不到！', 1100); SFX.laugh();
+  await wait(1250);
+  await el.animate([{ transform: hop }, { transform: `translate(${dir * 7 * p}px,${-6 * p}px)`, offset: .5 }, { transform: 'translate(0,0)' }], { duration: T(260), easing: 'ease-in' }).finished;
+  side.cancel(); el.style.zIndex = '';
+  im.src = SPR.spyScared;
+  $('#mission').innerHTML = '再來一次！這次跑不掉了！';
+  await wait(650);
+}
+
 async function shoot(el) {
   if (phase !== 'find') return;
   phase = 'busy';
@@ -783,6 +818,7 @@ async function shoot(el) {
   await wait(550);
   const m = nextMethod();
   await roulette(m);
+  if (twist(hit)) await dodge(el);
   await m.run(el, hit);
   el.classList.remove('locked');
   if (hit) {
