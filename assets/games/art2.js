@@ -707,6 +707,116 @@
     return P.url();
   }
 
+  /* ================= 寶藏大門：城堡石牆 ================= */
+  function bgDoor() {
+    const P = Cv(320, 200, 91);
+    P.rect(0, 0, 320, 164, '#372f42');
+    for (let r = 0; r * 14 < 164; r++) for (let c = -1; c * 28 < 320; c++) { const bx = c * 28 + (r % 2 ? 14 : 0), by = r * 14, base = ['#5d5266', '#655a6f', '#564b60', '#6a5f74'][P.R() * 4 | 0]; P.rect(bx + 1, by + 1, 27, 13, base); P.rect(bx + 1, by + 1, 27, 2, mix(base, '#ffffff', .14)); P.rect(bx + 1, by + 12, 27, 2, mix(base, '#000000', .24)); P.rect(bx + 26, by + 3, 2, 9, mix(base, '#000000', .12)); if (P.R() < .25) P.rect(bx + 6 + P.R() * 14, by + 5 + P.R() * 4, 3, 1, mix(base, '#000000', .25)); }
+    // 石拱門
+    const arch = (r, y) => y < 48 ? Math.sqrt(Math.max(0, r * r - (48 - y) ** 2)) : r;
+    for (let y = 0; y < 164; y++) { const o = arch(52, y), m = arch(44, y); if (y >= -4) { P.rect(160 - o, y, o * 2, 1, '#8b8aa3'); P.rect(160 - o, y, 2, 1, '#b9b6d8'); P.rect(160 + o - 2, y, 2, 1, '#5d5a77'); P.rect(160 - m, y, m * 2, 1, '#2a1a10'); } }
+    for (let a = 0; a <= 8; a++) { const t = Math.PI + a / 8 * Math.PI; P.line(160 + Math.cos(t) * 44, 48 + Math.sin(t) * 44, 160 + Math.cos(t) * 52, 48 + Math.sin(t) * 52, '#5d5a77'); }
+    for (let y = 60; y < 164; y += 18) { P.rect(108, y, 8, 1, '#5d5a77'); P.rect(204, y, 8, 1, '#5d5a77'); }
+    // 大木門
+    for (let y = 8; y < 164; y++) { const half = arch(40, y); for (let x = Math.ceil(160 - half); x < 160 + half; x++) { const k = Math.floor((x - 120) / 10), e = (x - 120) % 10; P.set(x, y, e === 0 ? '#5a3a20' : e === 1 ? '#b07a45' : e === 9 ? '#7a4e2c' : k % 2 ? '#8a5a32' : '#9a6a3f'); } }
+    for (let i = 0; i < 26; i++) { const x = 124 + P.R() * 72, y = 30 + P.R() * 126; P.rect(x, y, 1, 4 + P.R() * 6, '#6e4a2a'); }
+    P.rect(158, 10, 4, 154, '#3a2618'); P.rect(158, 10, 1, 154, '#6e4a2a');
+    [60, 112].forEach(y => { P.rect(120, y, 80, 7, '#2a2640'); P.rect(120, y, 80, 2, '#9a97b8'); P.rect(120, y + 2, 80, 3, '#5d5a77'); for (let x = 125; x < 200; x += 12) { P.rect(x, y + 2, 2, 2, '#e6e4f5'); P.set(x + 1, y + 3, '#2a2640'); } });
+    // 火把座
+    [48, 272].forEach(x => { P.rect(x - 2, 28, 5, 16, '#3a2618'); P.rect(x - 2, 28, 1, 16, '#6e4a2a'); P.rect(x - 6, 24, 13, 6, '#5d5a77'); P.rect(x - 6, 24, 13, 1, '#b9b6d8'); P.rect(x - 6, 29, 13, 1, '#35324e'); });
+    // 石板地（平塗）
+    P.rect(0, 164, 320, 36, '#3a3245'); P.rect(0, 164, 320, 2, '#6b5f75');
+    for (let x = 0; x < 320; x += 32) { P.rect(x, 166, 31, 16, '#4a4058'); P.rect(x, 166, 31, 1, '#5d5266'); P.rect(x + 16, 184, 31, 16, '#4a4058'); P.rect(x + 16, 184, 31, 1, '#5d5266'); }
+    return P.url();
+  }
+
+  /* ================= 火車過山洞：草原鐵道 ================= */
+  function bgRail() {
+    const P = Cv(320, 200, 101);
+    P.grad(0, 0, 320, 104, ['#8fcbf2', '#a2d5f5', '#b6dff7', '#cae8f9', '#def1fb'], (u, v) => v);
+    const cloud = (x, y, s) => { [[0, 4, 7], [8, 0, 9], [18, 2, 7], [26, 5, 5]].forEach(([dx, dy, r]) => P.ell(x + dx * s, y + dy * s + r * s * .5, r * s, r * s * .62, '#ffffff')); P.rect(x - 6 * s, y + 8 * s, 37 * s, 2 * s, '#d3eefb'); P.rect(x - 3 * s, y + 7 * s, 31 * s, 1 * s, '#ffffff'); };
+    cloud(20, 12, 1); cloud(120, 6, .75); cloud(236, 20, .9);
+    let j = 0; for (let x = 0; x < 320; x++) { j += (P.R() - .5) * 2; j = Math.max(-3, Math.min(3, j)); const top = Math.round(92 - 30 * (.5 + .5 * Math.sin(x * .022 + 1)) * (.6 + .4 * Math.sin(x * .058)) + j); for (let y = top; y < 112; y++) P.set(x, y, y - top < 2 ? '#a6d6b0' : '#8cc69a'); }
+    j = 0; for (let x = 0; x < 320; x++) { j += (P.R() - .5) * 2; j = Math.max(-3, Math.min(3, j)); const top = Math.round(100 - 12 * (.5 + .5 * Math.sin(x * .03 + 4)) + j); for (let y = top; y < 112; y++) P.set(x, y, y - top < 2 ? '#8fd07a' : '#74bf66'); }
+    // 草原：平塗兩層
+    P.rect(0, 108, 320, 92, '#7cc56a'); P.rect(0, 108, 320, 14, '#86cc72'); for (let x = 0; x < 320; x += 2) P.set(x, 122, '#86cc72');
+    // 遠方的樹和小屋（在側線上面）
+    const tree = (x, y, r) => { P.rect(x - 1, y - 3, 2, 4, '#6e4a2a'); P.ball(x, y - 3 - r, r, r, ['#2f7a3a', '#3e8f3a', '#5aa63c', '#8fd07a'], -.5, -.7, false); };
+    tree(30, 96, 5); tree(42, 97, 4); tree(214, 96, 5); tree(300, 95, 6);
+    P.rect(246, 86, 18, 10, '#fff1dc'); P.rect(246, 86, 18, 1, '#ffffff'); P.poly([[243, 86], [255, 78], [267, 86]], '#e8414f'); P.rect(253, 90, 4, 6, '#8a5a32'); P.rect(259, 89, 3, 3, '#78c3f0');
+    // 側線（上方等待的車廂）
+    for (let x = 0; x < 320; x += 10) { P.rect(x, 98, 6, 6, '#6e4a2a'); P.rect(x, 98, 6, 1, '#8a5a35'); }
+    P.rect(0, 98, 320, 2, '#d3d1e6'); P.rect(0, 100, 320, 1, '#8b8aa3'); P.rect(0, 102, 320, 2, '#a7a4c4');
+    // 主線：碎石、枕木、鐵軌
+    P.rect(0, 160, 320, 8, '#9a8a7a'); for (let x = 0; x < 320; x += 3) P.set(x + ((x * 7) % 2), 163 + ((x * 5) % 3), '#847466');
+    for (let x = 0; x < 320; x += 10) { P.rect(x, 158, 6, 12, '#6e4a2a'); P.rect(x, 158, 6, 1, '#9a6a3f'); P.rect(x + 5, 159, 1, 11, '#4e3420'); }
+    P.rect(0, 160, 320, 2, '#e6e4f5'); P.rect(0, 162, 320, 1, '#6b6890'); P.rect(0, 166, 320, 2, '#d3d1e6'); P.rect(0, 168, 320, 1, '#6b6890');
+    return P.url();
+  }
+
+  /* ================= 信鴿送信：屋頂 ================= */
+  function bgRoof() {
+    const P = Cv(320, 200, 111);
+    P.grad(0, 0, 320, 144, ['#ffb9cf', '#ffc6d6', '#ffd2dc', '#ffdde0', '#ffe7df', '#fff0dc'], (u, v) => v);
+    for (let y = 40; y < 130; y++) for (let x = 150; x < 250; x++) { const dd = Math.hypot(x - 200, y - 80); if (dd < 46) P.veil(x, y, '#fff8d8', (1 - dd / 46) * .7); }
+    P.ball(200, 80, 19, 19, ['#ffd98a', '#ffe8a3', '#fff3c4', '#fffbe6'], -.3, -.7, true);
+    const cloud = (x, y, s) => { [[0, 4, 7], [8, 0, 9], [18, 2, 7], [26, 5, 5]].forEach(([dx, dy, r]) => P.ell(x + dx * s, y + dy * s + r * s * .5, r * s, r * s * .62, '#ffffff')); P.rect(x - 6 * s, y + 8 * s, 37 * s, 2 * s, '#ffd4e2'); P.rect(x - 3 * s, y + 7 * s, 31 * s, 1 * s, '#ffffff'); };
+    cloud(56, 10, 1); cloud(236, 22, .7); cloud(140, 30, .5);
+    [[140, 40], [152, 34], [164, 44]].forEach(([x, y]) => { P.set(x, y, '#8b6a8f'); P.set(x - 1, y - 1, '#8b6a8f'); P.set(x + 1, y - 1, '#8b6a8f'); P.set(x - 2, y - 1, '#8b6a8f'); P.set(x + 2, y - 1, '#8b6a8f'); });
+    // 遠處城市（淡）
+    for (let x = 0; x < 320; x += 18) { const hh = 44 + ((x * 13) % 40); P.rect(x, 156 - hh, 16, hh + 44, '#e8c6dc'); P.rect(x, 156 - hh, 16, 1, '#f4dcea'); P.rect(x + 14, 156 - hh, 2, hh + 44, '#dcb6d0'); for (let y = 160 - hh; y < 156; y += 7) for (let wx = 2; wx < 13; wx += 4) if ((x + y + wx) % 3) P.rect(x + wx, y, 2, 3, '#f6e2ec'); }
+    // 近處城市
+    for (let x = 60; x < 250; x += 26) { const hh = 28 + ((x * 7) % 28); P.rect(x, 172 - hh, 24, hh + 28, '#c49ac0'); P.rect(x, 172 - hh, 24, 2, '#dcb8d8'); P.rect(x + 21, 172 - hh, 3, hh + 28, '#b086ae'); for (let y = 177 - hh; y < 196; y += 8) for (let wx = 3; wx < 20; wx += 6) { const lit = (x + y + wx) % 4 === 0; P.rect(x + wx, y, 4, 4, lit ? '#fff3c4' : '#a77ea6'); if (lit) P.rect(x + wx, y, 4, 1, '#ffffff'); } }
+    // 左邊大樓：屋頂、磚牆、窗
+    P.rect(0, 128, 116, 6, INK); P.rect(0, 128, 114, 4, '#b9a9b8'); P.rect(0, 128, 114, 2, '#e6dde6');
+    P.rect(0, 134, 116, 66, INK); P.rect(0, 134, 114, 66, '#9a6458');
+    for (let r = 0; r * 8 < 66; r++) for (let c = -1; c * 16 < 114; c++) { const bx = c * 16 + (r % 2 ? 8 : 0), by = 134 + r * 8, base = ['#c98a7a', '#bf7f70', '#d0937f'][P.R() * 3 | 0]; for (let yy = by + 1; yy < by + 8; yy++) for (let xx = Math.max(0, bx + 1); xx < Math.min(114, bx + 16); xx++) P.set(xx, yy, yy === by + 1 ? mix(base, '#ffffff', .18) : yy === by + 7 ? mix(base, '#000000', .2) : base); }
+    for (const x of [12, 44, 76]) { P.rect(x, 148, 20, 20, INK); P.grad(x + 2, 150, 16, 16, ['#bfe4fa', '#9fd4f5', '#84c2ee'], (u, v) => v); P.rect(x + 2, 150, 16, 3, '#fffaf0'); P.rect(x + 9, 150, 2, 16, INK); P.rect(x - 2, 168, 24, 2, '#e6dde6'); P.rect(x - 2, 170, 24, 1, '#7a4a40'); }
+    // 水塔
+    P.rect(86, 100, 24, 20, INK); P.grad(88, 102, 20, 16, ['#a8dcf6', '#78c3f0', '#4f9fd6'], (u, v) => u); P.rect(88, 102, 20, 2, '#dff3fd'); P.rect(88, 109, 20, 1, '#3c8dde'); P.rect(88, 114, 20, 1, '#3c8dde'); P.poly([[86, 100], [98, 94], [110, 100]], INK); P.poly([[89, 99], [98, 95.5], [107, 99]], '#8b8aa3');
+    P.rect(88, 120, 2, 10, INK); P.rect(106, 120, 2, 10, INK); P.line(89, 120, 106, 128, '#5d5a77'); P.line(106, 120, 89, 128, '#5d5a77');
+    // 天線
+    P.rect(72, 88, 2, 42, '#5d5a77'); P.rect(64, 92, 18, 2, '#5d5a77'); P.rect(66, 98, 14, 2, '#5d5a77'); P.set(72, 87, '#e8414f'); P.set(73, 87, '#e8414f');
+    // 鴿舍
+    P.rect(4, 96, 52, 34, INK); P.rect(6, 98, 48, 30, '#dca066'); for (let x = 6; x < 54; x += 8) { P.rect(x, 98, 1, 30, '#b8834e'); P.rect(x + 1, 98, 1, 30, '#f0c08a'); } P.rect(6, 98, 48, 2, '#f2c48e');
+    for (let i = 0; i < 18; i++) { const half = 2 + i * 1.7; P.rect(30 - half - 1, 78 + i, half * 2 + 2, 1, INK); if (i) P.rect(30 - half + 1, 78 + i, half * 2 - 2, 1, (i >> 1) % 2 ? '#d6334a' : '#b42a3c'); }
+    P.rect(0, 94, 60, 4, INK); P.rect(2, 94, 56, 2, '#e8414f'); P.rect(2, 94, 56, 1, '#ff8a8a');
+    P.ell(27, 112, 11, 9, INK); P.rect(16, 112, 22, 10, INK); P.ell(27, 112, 9, 7, '#3a2618'); P.rect(18, 112, 18, 9, '#3a2618'); P.rect(18, 106, 18, 4, '#2a1a10');
+    P.rect(12, 122, 30, 4, INK); P.rect(14, 122, 26, 2, '#b8834e'); P.rect(14, 122, 26, 1, '#dca066');
+    P.rect(44, 108, 6, 6, INK); P.rect(46, 110, 2, 2, '#fff3c4');
+    // 盆栽
+    P.rect(56, 120, 12, 10, INK); P.rect(58, 120, 8, 8, '#c45a2a'); P.rect(58, 120, 8, 2, '#e07a42'); P.ball(62, 114, 6.5, 6.5, ['#2f7a3a', '#3e8f3a', '#5aa63c', '#8fd07a']); P.rect(63, 109, 2, 2, '#ff8fb1'); P.rect(58, 114, 2, 2, '#ffd166');
+    // 右邊大樓
+    P.rect(232, 48, 88, 152, INK); P.rect(234, 50, 86, 150, '#ffe8c2'); for (let y = 56; y < 200; y += 10) P.rect(234, y, 86, 1, '#f2d4a8'); for (let y = 50; y < 200; y += 20) for (let x = 234 + ((y / 20) % 2) * 10; x < 320; x += 20) P.rect(x, y, 1, 10, '#f2d4a8');
+    P.rect(234, 50, 3, 150, '#fff6e0');
+    for (let x = 248; x < 312; x++) { const g = ((x - 248) >> 3) % 2; P.rect(x, 60, 1, 10, g ? '#2f9e5b' : '#fffaf0'); P.set(x, 60, g ? '#6fd08f' : '#ffffff'); P.rect(x, 70, 1, 1 + Math.round(1.5 + 1.5 * Math.cos(((x - 248) % 8) / 8 * Math.PI * 2 + Math.PI)), g ? '#2f9e5b' : '#fffaf0'); } P.rect(246, 58, 68, 2, INK);
+    P.rect(256, 74, 44, 44, INK); P.grad(258, 76, 40, 40, ['#cfeeff', '#9fd4f5', '#84c2ee'], (u, v) => v);
+    [[258, 0], [288, 1]].forEach(([x, k]) => { P.rect(x, 76, 10, 40, '#ff8fb1'); P.rect(x + (k ? 0 : 8), 76, 2, 40, '#e86a92'); P.rect(x + 3, 76, 1, 40, '#ffb3cf'); P.rect(x + 6, 76, 1, 40, '#f07aa0'); });
+    P.rect(277, 76, 2, 40, INK); P.rect(254, 118, 48, 3, '#fffaf0'); P.rect(254, 121, 48, 1, '#d9b98a');
+    // 陽台地板
+    P.rect(224, 132, 96, 8, INK); P.rect(226, 132, 94, 4, '#d3d1e6'); P.rect(226, 132, 94, 2, '#ffffff'); for (let x = 228; x < 320; x += 12) P.rect(x, 140, 4, 6, '#a7a4c4');
+    return P.url();
+  }
+
+  /* ================= 神奇實驗室 ================= */
+  function bgLab() {
+    const P = Cv(320, 200, 121);
+    for (let y = 0; y < 136; y += 12) for (let x = 0; x < 320; x += 16) { P.rect(x, y, 16, 12, '#cfe8e2'); P.rect(x, y, 16, 1, '#eaf6f3'); P.rect(x, y, 1, 12, '#b7d6cf'); P.rect(x + 1, y + 1, 1, 11, '#dff0ec'); }
+    // 窗戶
+    P.rect(12, 12, 52, 44, INK); P.grad(14, 14, 48, 40, ['#8fcbf2', '#a8d8f6', '#c4e6fa'], (u, v) => v); P.ell(26, 24, 7, 3, '#ffffff'); P.ell(33, 21, 5, 4, '#ffffff'); P.rect(14, 46, 48, 8, '#8cc69a'); P.rect(14, 46, 48, 1, '#b4dcc0');
+    P.rect(36, 14, 4, 40, '#fffaf0'); P.rect(14, 32, 48, 4, '#fffaf0'); P.rect(8, 56, 60, 4, '#fffaf0'); P.rect(8, 60, 60, 1, '#9fbfb8');
+    // 黑板和公式
+    P.rect(88, 12, 100, 52, INK); P.rect(90, 14, 96, 48, '#8a5a35'); P.rect(92, 16, 92, 44, '#2f5a45'); P.rect(92, 16, 92, 1, '#244a38');
+    const ch = '#e6f0ea'; for (let a = 0; a < 3; a++) for (let t = 0; t < 40; t++) { const th = t / 40 * Math.PI * 2, ca = Math.cos(a * Math.PI / 3), sa = Math.sin(a * Math.PI / 3), ex = Math.cos(th) * 13, ey = Math.sin(th) * 5; P.set(112 + ex * ca - ey * sa, 37 + ex * sa + ey * ca, ch); }
+    P.ell(112, 37, 2.5, 2.5, '#ffd166'); P.rect(134, 24, 38, 2, ch); P.rect(134, 34, 24, 2, ch); P.rect(134, 44, 42, 2, ch); P.rect(164, 32, 8, 6, ch); P.rect(166, 34, 4, 2, '#2f5a45'); P.rect(96, 56, 10, 2, '#fffaf0'); P.rect(110, 56, 6, 2, '#ffd166');
+    // 層架與瓶子
+    for (const sy of [32, 68]) { P.rect(220, sy, 92, 4, '#5a3a20'); P.rect(220, sy, 92, 1, '#9a6a3f'); P.rect(220, sy + 4, 92, 2, '#a9c8c0'); for (let i = 0; i < 6; i++) { const x = 226 + i * 14, c = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b', '#b48cff', '#ff9b6b'][(i + sy) % 6], hh = 10 + (i % 3) * 4; P.rect(x, sy - hh, 10, hh, INK); P.rect(x + 2, sy - hh + 2, 6, hh - 2, '#e6f6ff'); P.rect(x + 2, sy - hh + 5, 6, hh - 5, c); P.rect(x + 2, sy - hh + 5, 6, 1, mix(c, '#ffffff', .5)); P.rect(x + 2, sy - hh + 5, 2, hh - 5, mix(c, '#ffffff', .3)); P.rect(x + 3, sy - hh - 3, 4, 3, INK); P.rect(x + 4, sy - hh - 2, 2, 2, '#c98a4b'); } }
+    // 實驗桌（桌面和櫃子都平塗）
+    P.rect(0, 136, 320, 12, INK); P.rect(0, 136, 320, 8, '#e6e1d3'); P.rect(0, 136, 320, 2, '#ffffff'); P.rect(0, 144, 320, 2, '#b9b29c');
+    P.rect(0, 148, 320, 52, '#5d5a77'); for (let x = 0; x < 320; x += 80) { P.rect(x + 4, 152, 72, 44, '#4a4458'); P.rect(x + 4, 152, 72, 1, '#6b6880'); P.rect(x + 4, 195, 72, 1, '#35324e'); P.rect(x + 36, 170, 8, 4, '#d3d1e6'); P.rect(x + 36, 170, 8, 1, '#ffffff'); }
+    return P.url();
+  }
+
   /* ================= 套用：換背景，角色交給 games-core.js（它會先看 ART.HD） ================= */
   const LANES = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b'];
   ART.BG.boss = bgBoss();
@@ -716,6 +826,7 @@
   ART.BG.rocket = bgRocket();
   ART.BG.fish = bgFish();
   ART.BG.ox = bgOx(); ART.BG.vote = bgVote(); ART.BG.detect = bgDetect(); ART.BG.bridge = bgBridge(); ART.BG.vault = bgVault(); ART.BG.sky = bgSky();
+  ART.BG.door = bgDoor(); ART.BG.rail = bgRail(); ART.BG.roof = bgRoof(); ART.BG.lab = bgLab();
   ART.HD = {
     Cv, Mask, paint, mix, rampOf,
     // 第 0–3 隻是小飛龍（第 0 隻也是洞穴魔王），後面是五款可愛怪獸各四色；打怪獸每題隨機出一隻
