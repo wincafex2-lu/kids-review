@@ -229,47 +229,7 @@
     { m: '#3b8fd6', wing: '#7a5be0', b: '#e6f2f0', h: '#ffd978', r: '#a81f3c', c: '#ffb3cf', eye: '#ffe066' },
   ];
 
-  /* ================= 怪獸二號：原版那隻傻呼呼的圓怪獸，放大重畫（面向左）96×84 ================= */
-  function goofy(pal) {
-    const W = 96, H = 84, P = Cv(W, H);
-    const B = rampOf(pal.m), BE = rampOf(pal.b, pal.m, '#ffffff'), HN = rampOf(pal.h, '#6a5a70', '#ffffff'), FT = rampOf(mix(pal.m, '#120c2a', .25));
-    const part = (fn, ramp, o) => { const M = Mask(W, H); fn(M); return paint(P, M, ramp, o); };
-    const BIG = { d1: 2, d2: 7, h1: 4 }, MID = { d1: 1, d2: 4, h1: 2 }, SM = { d1: 1, d2: 2, h1: 1 };
-    // 鹿角一樣的小角
-    part(M => M.poly([[19, 20], [13, 2], [19, 3], [23, 12], [26, 5], [31, 7], [30, 20]]), HN, SM);
-    part(M => M.poly([[77, 20], [83, 2], [77, 3], [73, 12], [70, 5], [65, 7], [66, 20]]), HN, SM);
-    // 小尾巴、腳
-    part(M => M.poly([[82, 54], [95, 50], [94, 61], [84, 66]]), B, MID);
-    [[24, 79, 10], [50, 80, 10], [74, 79, 9]].forEach(([x, y, r]) => part(M => M.ell(x, y, r, 4.5), FT, MID));
-    // 圓滾滾的身體
-    part(M => M.ell(48, 46, 37, 33).ell(48, 60, 40, 21), B, BIG);
-    P.ell(22, 24, 5, 2.5, B[3]); P.ell(30, 20, 2, 1.2, B[3]);
-    [[70, 26], [76, 34], [66, 33], [80, 44]].forEach(([x, y]) => { P.ell(x, y, 2, 1.5, B[1]); });
-    // 肚子
-    part(M => M.ell(60, 63, 17, 13), BE, MID);
-    // 短短的手
-    part(M => M.ell(7, 63, 6.5, 8), B, MID); [[2, 67], [5, 70], [9, 71]].forEach(([x, y]) => P.rect(x, y, 2, 2, '#fffdf2'));
-    // 大眼睛：粗框、鬥雞眼
-    [[27, 35, 3, 3], [51, 35, -3, 3]].forEach(([x, y, dx, dy]) => { P.ell(x, y, 12, 12, INK); P.ell(x, y, 9.6, 9.6, '#ffffff'); P.ell(x + 1.5, y + 3, 8, 6, '#e9e6f4'); P.ell(x - .5, y - 1, 9, 7.5, '#ffffff'); P.ell(x + dx, y + dy, 4, 4, INK); P.rect(x + dx - 2, y + dy - 3, 2, 2, '#ffffff'); });
-    P.rect(37, 33, 5, 3, INK);
-    // 腮紅
-    P.ell(10, 47, 4.5, 3, pal.c); P.ell(69, 49, 4.5, 3, pal.c);
-    // 嘴巴：開開的、兩顆大門牙
-    const mouth = Mask(W, H); mouth.rect(12, 52, 26, 10).ell(14, 57, 4, 5).ell(36, 57, 4, 5);
-    for (let y = 50; y < 66; y++) for (let x = 6; x < 44; x++) if (!mouth.get(x, y) && (mouth.get(x - 1, y) || mouth.get(x + 1, y) || mouth.get(x, y - 1) || mouth.get(x, y + 1) || mouth.get(x - 1, y - 1) || mouth.get(x + 1, y + 1) || mouth.get(x - 1, y + 1) || mouth.get(x + 1, y - 1))) P.set(x, y, INK);
-    for (let y = 50; y < 66; y++) for (let x = 6; x < 44; x++) if (mouth.get(x, y)) P.set(x, y, y > 58 ? mix(pal.r, '#ff9aa6', .55) : pal.r);
-    [[15, 52], [30, 52]].forEach(([x, y]) => { P.rect(x, y, 5, 5, '#fffdf2'); P.rect(x + 4, y, 1, 5, '#cfc8b0'); P.rect(x, y + 4, 5, 1, '#cfc8b0'); });
-    P.outline();
-    return P.url();
-  }
-  const GOOFYPAL = [
-    { m: '#ef6b4a', b: '#ffe0b8', h: '#f6f3fa', r: '#7a1730', c: '#ffc49a' },
-    { m: '#8a63e8', b: '#e6d7ff', h: '#fff3c4', r: '#a81f3c', c: '#ff8fb1' },
-    { m: '#4fb36b', b: '#e2f7c8', h: '#ffe8a3', r: '#a81f3c', c: '#ffb3a0' },
-    { m: '#3f9bd8', b: '#d9f1ff', h: '#ffd166', r: '#a81f3c', c: '#ffb3cf' },
-  ];
-
-  /* ================= 可愛怪獸候選（面向左）96×84：果凍怪、獨眼毛球、小恐龍、小幽靈、小惡魔 ================= */
+  /* ================= 可愛怪獸（面向左）96×84：果凍怪、獨眼毛球、小恐龍、小幽靈、小惡魔 ================= */
   const BIGO = { d1: 2, d2: 7, h1: 4 }, MIDO = { d1: 1, d2: 4, h1: 2 }, SMO = { d1: 1, d2: 2, h1: 1 };
   function critter(fn) { const W = 96, H = 84, P = Cv(W, H); const part = (f, ramp, o) => { const M = Mask(W, H); f(M); return paint(P, M, ramp, o); }; fn(P, part); P.outline(); return P.url(); }
   // 黑亮的豆豆眼
@@ -338,7 +298,14 @@
       P.path([[36, 56], [40, 59.5], [46, 60.5], [52, 59.5], [56, 56]], INK, 1.8); P.rect(38, 59, 3, 3, '#fffdf2'); P.set(39, 62, '#fffdf2');
     }),
   };
-  const CUTE = [['slime', '果凍怪', '#4fb8e8'], ['fuzz', '獨眼毛球', '#8a63e8'], ['dino', '小恐龍', '#5cc46a'], ['ghost', '小幽靈', '#eef0ff'], ['imp', '小惡魔', '#ef5b6b']];
+  // 每款四種顏色
+  const CUTE = {
+    slime: ['#4fb8e8', '#ff8fb1', '#5fd0a8', '#ffc94a'],
+    fuzz: ['#8a63e8', '#2fb5a6', '#ff8a4a', '#f06aa8'],
+    dino: ['#5cc46a', '#4aa8e8', '#ff9a52', '#a57be0'],
+    ghost: ['#eef0ff', '#d9f7ea', '#ffe3ee', '#fff5c9'],
+    imp: ['#ef5b6b', '#9a63e8', '#3fa8c8', '#ff8a3a'],
+  };
 
   /* ================= 武器（都指向右邊）、砲彈、大砲 ================= */
   const STEEL = ['#4a5068', '#8a93a8', '#c5ccda', '#f4f7fb'], GOLD = ['#8a5a10', '#d49a1e', '#ffd166', '#fff3c4'], WOOD = ['#3a2416', '#6e4526', '#9a6a3f', '#c99560'], IRON = ['#16142a', '#35324e', '#5d5a77', '#9a97b8'];
@@ -445,8 +412,8 @@
   ART.BG.race = bgRace();
   ART.HD = {
     Cv, Mask, paint, mix, rampOf,
-    mon: MONPAL.map(monster), // 四隻小飛龍（第 0 隻是洞穴魔王）
-    cand: CUTE.map(([k, name, c]) => ({ k, name, src: cute[k](c) })), // 可愛怪獸候選，等挑選
+    // 第 0–3 隻是小飛龍（第 0 隻也是洞穴魔王），後面是五款可愛怪獸各四色；打怪獸每題隨機出一隻
+    mon: [...MONPAL.map(monster), ...Object.keys(CUTE).flatMap(k => CUTE[k].map(c => cute[k](c)))],
     horse: LANES.map((c, i) => [0, 1].map(f => horse(COATS[i][0], COATS[i][1], c, f))),
     weapon: weapons, cannon: cannon.src, balls: LANES.map(shell),
   };
