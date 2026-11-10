@@ -35,9 +35,9 @@ const HD = ART.HD || {};
 const MON = HD.mon || SPRITES.monsterPal.map(p => pix(SPRITES.monster, p));
 const LANE = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b'];
 const HORSE = HD.horse || LANE.map(c => SPRITES.horse.map(r => pixShaded(r, { k: '#1d1b2e', c, f: '#f5c79a', j: c, r: '#fffaf0', b: '#9a6a3f', n: '#6e4a2a', d: '#3a2618' })));
-const ROCKET = LANE.map(c => pixShaded(SPRITES.rocket, { k: '#1d1b2e', r: c, w: '#f2f4f8', s: '#b9b6d8', g: '#5d5a77', b: '#78c3f0' }));
+const ROCKET = HD.rocket || LANE.map(c => pixShaded(SPRITES.rocket, { k: '#1d1b2e', r: c, w: '#f2f4f8', s: '#b9b6d8', g: '#5d5a77', b: '#78c3f0' }));
 const WEAPON = ['sword', 'arrow', 'hammer', 'wand'].map(k => HD.weapon ? { k, ...HD.weapon[k] } : { k, src: pixShaded(SPRITES[k], SPAL.weapon), w: SPRITES[k][0].length, h: SPRITES[k].length });
-const CANNON = HD.cannon || pixShaded(SPRITES.cannon, SPAL.cannon), FISH = pixShaded(SPRITES.fish, SPAL.fish), BOOT = pixShaded(SPRITES.boot, SPAL.boot);
+const CANNON = HD.cannon || pixShaded(SPRITES.cannon, SPAL.cannon), FISH = HD.fish || pixShaded(SPRITES.fish, SPAL.fish), BOOT = HD.boot || pixShaded(SPRITES.boot, SPAL.boot);
 // 砲彈：有重繪版就用點陣圖，沒有就用 CSS 畫的圓球
 const ballEl = i => { const b = el('div', 'ball2'); if (HD.balls) { b.classList.add('pxball'); b.style.backgroundImage = `url(${HD.balls[i]})`; } else b.style.setProperty('--c', LANE[i]); return b; };
 const setBG = (scene, key) => { scene.style.backgroundImage = `url(${ART.BG[key]})`; };

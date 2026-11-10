@@ -406,15 +406,186 @@
     return P.url();
   }
 
+  /* ================= 拆炸彈：地下室 ================= */
+  function bgBomb() {
+    const P = Cv(320, 200, 11);
+    // 磚牆：吊燈照到的地方比較亮
+    const inCone = (x, y) => y > 26 && Math.abs(x - 158) < 14 + (y - 26) * .62;
+    P.rect(0, 0, 320, 170, '#2a2540');
+    for (let r = 0; r * 12 < 170; r++) for (let c = -1; c * 32 < 320; c++) {
+      const bx = c * 32 + (r % 2 ? 16 : 0), by = r * 12, lit = inCone(bx + 16, by + 6), base = lit ? ['#5a5380', '#615a88', '#565079'][P.R() * 3 | 0] : ['#474063', '#4c4569', '#433c5e'][P.R() * 3 | 0];
+      P.rect(bx + 1, by + 1, 31, 11, base); P.rect(bx + 1, by + 1, 31, 1, mix(base, '#ffffff', .14)); P.rect(bx + 1, by + 11, 31, 1, mix(base, '#000000', .22)); P.rect(bx + 31, by + 1, 1, 11, mix(base, '#000000', .14));
+    }
+    // 吊燈
+    P.rect(157, 0, 2, 16, INK); P.poly([[146, 24], [150, 16], [166, 16], [170, 24]], '#5d5a77'); P.rect(150, 16, 16, 1, '#a7a4c4'); P.rect(146, 23, 24, 1, '#35324e'); P.rect(152, 24, 12, 3, '#fff3c4'); P.rect(154, 27, 8, 1, '#ffe08a');
+    // 通風口
+    P.rect(14, 14, 44, 24, INK); P.rect(16, 16, 40, 20, '#35324e'); for (let y = 18; y < 35; y += 4) { P.rect(18, y, 36, 2, '#5d5a77'); P.rect(18, y, 36, 1, '#8b8aa3'); } [[15, 15], [56, 15], [15, 36], [56, 36]].forEach(([x, y]) => P.set(x, y, '#a7a4c4'));
+    // 警告標誌（放在炸彈和選項牌中間的上方）
+    P.poly([[130, 8], [144, 32], [116, 32]], INK); P.poly([[130, 11], [141.5, 30.5], [118.5, 30.5]], '#ffd166'); P.poly([[130, 12], [133, 17], [127, 17]], '#fff3c4'); P.rect(129, 17, 3, 8, INK); P.rect(129, 27, 3, 2, INK);
+    // 牆上管線
+    P.rect(0, 140, 320, 7, '#35324e'); P.rect(0, 140, 320, 2, '#9a97b8'); P.rect(0, 142, 320, 3, '#6b6890'); P.rect(0, 147, 320, 2, '#1d1934');
+    for (let x = 20; x < 320; x += 60) { P.rect(x, 137, 7, 13, INK); P.rect(x + 1, 138, 5, 11, '#4a4766'); P.rect(x + 1, 138, 5, 1, '#8b8aa3'); P.set(x + 3, 143, '#cfcde6'); }
+    // 地面：警告條＋鋼板（保持乾淨）
+    for (let y = 168; y < 174; y++) for (let x = 0; x < 320; x++) P.set(x, y, ((x + (y - 168)) >> 3) % 2 ? INK : '#ffd166');
+    P.rect(0, 167, 320, 1, INK); P.rect(0, 174, 320, 26, '#2a2640'); P.rect(0, 174, 320, 2, '#57507c');
+    for (let x = 0; x < 320; x += 80) { P.rect(x, 176, 1, 24, '#1d1934'); P.rect(x + 1, 176, 1, 24, '#35304e'); P.set(x + 5, 180, '#57507c'); P.set(x + 75, 180, '#57507c'); P.set(x + 5, 196, '#57507c'); P.set(x + 75, 196, '#57507c'); }
+    return P.url();
+  }
+  // 炸彈本體 84×92
+  function spBomb() {
+    const P = Cv(84, 92);
+    P.ball(42, 52, 38, 38, ['#0c0a16', '#1b1830', '#35324e', '#5d5a77', '#8b8aa3'], -.55, -.65, true);
+    P.ell(26, 34, 6, 4, '#a7a4c4'); P.ell(24, 33, 3, 2, '#e6e4f5'); P.set(34, 28, '#cfcde6');
+    for (let a = 0; a < 16; a++) { const t = a / 16 * Math.PI * 2 + .2, x = 42 + Math.cos(t) * 32, y = 52 + Math.sin(t) * 32; P.rect(x, y, 2, 2, '#9a97b8'); P.set(x + 1, y + 1, '#0c0a16'); P.set(x, y, '#e6e4f5'); }
+    const M = Mask(84, 92); M.rect(30, 6, 24, 12); paint(P, M, ['#35324e', '#6b6890', '#9a97b8', '#e6e4f5'], { d1: 1, d2: 3, h1: 2 }); [36, 42, 48].forEach(x => P.rect(x, 7, 1, 10, '#4a4766'));
+    P.rect(28, 17, 28, 3, '#1b1830'); P.rect(28, 17, 28, 1, '#5d5a77');
+    P.outline('#0b0912'); return P.url();
+  }
+
+  /* ================= 扭蛋機：玩具店 ================= */
+  function bgGacha() {
+    const P = Cv(320, 200, 31);
+    for (let x = 0; x < 320; x++) P.rect(x, 0, 1, 132, (x >> 4) % 2 ? '#ffd9e8' : '#ffe6f0');
+    for (let x = 0; x < 320; x += 16) P.rect(x, 0, 1, 132, '#ffcfe0');
+    // 掛旗
+    for (let x = 0; x < 320; x++) P.set(x, 5 + Math.round(4 * Math.sin((x % 80) / 80 * Math.PI)), '#c98a9c');
+    for (let x = 6, i = 0; x < 320; x += 20, i++) { const y0 = 6 + Math.round(4 * Math.sin(((x + 6) % 80) / 80 * Math.PI)), c = ['#ff8fb1', '#ffd166', '#7fd6c2', '#b48cff', '#7fb8f0'][i % 5]; P.poly([[x, y0], [x + 13, y0], [x + 6.5, y0 + 12]], c); P.poly([[x, y0], [x + 5, y0], [x + 4, y0 + 5]], mix(c, '#ffffff', .4)); }
+    // 木牆裙
+    for (let x = 0; x < 320; x += 20) { const b = ['#dba56c', '#d59c62', '#e0ac74'][P.R() * 3 | 0]; P.rect(x, 132, 20, 26, b); P.rect(x, 132, 1, 26, '#b07a45'); P.rect(x + 1, 132, 1, 26, '#eebf8c'); for (let k = 0; k < 2; k++) P.rect(x + 4 + P.R() * 10, 138 + P.R() * 14, 1, 4, '#c08a52'); }
+    P.rect(0, 130, 320, 3, '#f3cfa0'); P.rect(0, 133, 320, 1, '#a8743f');
+    // 層架和玩具
+    const box = (x, y, w, h, c) => { P.rect(x, y - h, w, h, c); P.rect(x, y - h, w, 2, mix(c, '#ffffff', .4)); P.rect(x + w - 2, y - h, 2, h, mix(c, '#000000', .22)); P.rect(x + 2, y - h + 4, w - 6, 2, '#fffaf0'); P.rect(x + 2, y - h + 8, Math.max(2, w - 10), 1, mix(c, '#ffffff', .5)); };
+    const bear = (x, y, c) => { P.ell(x - 4, y - 17, 2.5, 2.5, c); P.ell(x + 4, y - 17, 2.5, 2.5, c); P.ball(x, y - 12, 6, 5.5, rampOf(c)); P.ball(x, y - 4, 5, 4.5, rampOf(c)); P.ell(x, y - 11, 2.4, 1.8, '#fff1dc'); P.set(x - 2, y - 13, INK); P.set(x + 2, y - 13, INK); P.set(x, y - 11, INK); };
+    const ball = (x, y) => { P.ball(x, y - 6, 6, 6, ['#b02a3c', '#e8414f', '#ff7a7a', '#ffd0d4']); P.rect(x - 6, y - 7, 12, 2, '#fffaf0'); P.set(x - 3, y - 10, '#ffffff'); };
+    const robot = (x, y) => { P.rect(x - 5, y - 10, 10, 10, '#7fb8f0'); P.rect(x - 5, y - 10, 10, 1, '#cfe6ff'); P.rect(x - 4, y - 18, 8, 7, '#a7c8f0'); P.rect(x - 4, y - 18, 8, 1, '#e6f2ff'); P.rect(x - 2, y - 16, 2, 2, INK); P.rect(x + 1, y - 16, 2, 2, INK); P.rect(x, y - 21, 1, 3, '#5d5a77'); P.set(x, y - 22, '#e8414f'); P.rect(x - 2, y - 7, 4, 3, '#ffd166'); };
+    const cols = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b', '#b48cff', '#ff7a1a'];
+    [[4, 40, 0], [224, 40, 1], [4, 88, 2], [224, 88, 3]].forEach(([x, y, k]) => {
+      P.rect(x, y, 92, 4, '#8a5a35'); P.rect(x, y, 92, 1, '#c08a52'); P.rect(x, y + 4, 92, 2, '#f3c0d2'); P.rect(x + 6, y + 4, 3, 6, '#6e4a2a'); P.rect(x + 83, y + 4, 3, 6, '#6e4a2a');
+      let bx = x + 3; const special = [bear, ball, robot, bear][k], sp = 1 + (k % 3);
+      for (let i = 0; bx < x + 78; i++) { if (i === sp) { special(bx + 8, y, ['#c98a5a', '', '', '#f0a8c0'][k] || '#c98a5a'); bx += 19; continue; } const w = 11 + (P.R() * 8 | 0), h = 11 + (P.R() * 11 | 0); box(bx, y, w, h, cols[P.R() * 6 | 0]); bx += w + 2 + (P.R() * 3 | 0); }
+    });
+    // 櫃台：平塗，硬幣放這裡
+    P.rect(0, 158, 320, 42, '#c9567d'); P.rect(0, 158, 320, 3, '#ff9fc0'); P.rect(0, 161, 320, 2, '#e67aa0'); P.rect(0, 163, 320, 1, '#8f2f53');
+    for (let x = 0; x < 320; x += 40) P.rect(x, 164, 1, 36, '#b84d73');
+    return P.url();
+  }
+  function spMachine() {
+    const P = Cv(96, 68), M = Mask(96, 68); M.rect(1, 1, 94, 66);
+    paint(P, M, ['#8f1f33', '#c2283f', '#e8414f', '#ff7a85'], { d1: 2, d2: 8, h1: 4 });
+    P.rect(1, 1, 94, 3, '#ff9aa2'); [[6, 8], [88, 8], [6, 58], [88, 58]].forEach(([x, y]) => { P.rect(x, y, 2, 2, '#ffd0d4'); P.set(x + 1, y + 1, '#8f1f33'); });
+    // 投幣口座
+    const S = Mask(96, 68); S.rect(64, 8, 20, 24); paint(P, S, ['#6b6890', '#9a97b8', '#d3d1e6', '#ffffff'], { d1: 1, d2: 3, h1: 2 }); P.rect(63, 7, 22, 1, INK); P.rect(63, 32, 22, 1, INK); P.rect(63, 7, 1, 26, INK); P.rect(84, 7, 1, 26, INK); P.rect(72, 11, 4, 17, INK); P.rect(73, 12, 1, 15, '#35324e');
+    // 星星貼紙
+    const star = []; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 4 : 9; star.push([48 + Math.cos(a) * r, 17 + Math.sin(a) * r]); }
+    const T = Mask(96, 68); T.poly(star); paint(P, T, ['#c98a00', '#f2b632', '#ffd166', '#fff3c4'], { d1: 1, d2: 2, h1: 1 });
+    // 出口
+    P.rect(30, 40, 36, 22, INK); P.rect(32, 42, 32, 18, '#2a2640'); P.rect(32, 42, 32, 5, '#121019'); P.rect(30, 40, 36, 2, '#d3d1e6'); P.rect(32, 58, 32, 2, '#3d3858');
+    P.rect(0, 0, 96, 1, INK); P.rect(0, 67, 96, 1, INK); P.rect(0, 0, 1, 68, INK); P.rect(95, 0, 1, 68, INK);
+    return P.url();
+  }
+  function spKnob() {
+    const P = Cv(30, 30); P.ball(15, 15, 13.5, 13.5, ['#b9b29c', '#e6e1d3', '#fffaf0', '#ffffff'], -.5, -.7, true);
+    const M = Mask(30, 30); M.rect(3, 12, 24, 6); paint(P, M, ['#16142a', '#35324e', '#5d5a77', '#9a97b8'], { d1: 1, d2: 2, h1: 1 }); P.ell(15, 15, 3, 3, '#9a97b8'); P.ell(14.5, 14.5, 1.5, 1.5, '#e6e4f5');
+    P.outline(); return P.url();
+  }
+
+  /* ================= 火箭發射：夜晚的發射場 ================= */
+  function bgRocket() {
+    const P = Cv(320, 200, 47);
+    P.grad(0, 0, 320, 168, ['#0b0a1e', '#100e2a', '#171438', '#201b48', '#2b2459', '#3a3070', '#4c3f86'], (u, v) => Math.pow(v, 1.5));
+    for (let i = 0; i < 190; i++) { const x = P.R() * 320 | 0, y = P.R() * 140 | 0, c = ['#fffaf0', '#fff3c4', '#b9d8ff', '#ffd6e6', '#7f78b8'][P.R() * 5 | 0]; P.set(x, y, c); if (P.R() < .08) { const m = mix(c, '#201b48', .45); P.set(x - 1, y, m); P.set(x + 1, y, m); P.set(x, y - 1, m); P.set(x, y + 1, m); } }
+    // 銀河
+    for (let i = 0; i < 500; i++) { const t = P.R(), x = t * 320, y = 20 + t * 50 + (P.R() - .5) * 26 * (1 - Math.abs(t - .5)); P.veil(x | 0, y | 0, '#4a3f8c', .35); }
+    const mx = 264, my = 32, mr = 18;
+    for (let y = my - 40; y < my + 40; y++) for (let x = mx - 40; x < mx + 40; x++) { const dd = Math.hypot(x + .5 - mx, y + .5 - my); if (dd < mr + 18 && dd > mr - 1) P.veil(x, y, '#4a3f8c', Math.max(0, 1 - (dd - mr) / 18) * .7); }
+    P.ball(mx, my, mr, mr, ['#cdbb86', '#e6d79f', '#f6ecbb', '#fff8dc', '#fffdf2'], -.5, -.6, true);
+    [[-6, -5, 4, 3.4], [6, 4, 3.2, 2.8], [-3, 8, 2.4, 2], [8, -8, 2, 1.8]].forEach(([dx, dy, a, b]) => { P.ell(mx + dx, my + dy, a, b, '#d9c990'); P.ell(mx + dx + .6, my + dy + .6, a * .72, b * .72, '#e9dba6'); });
+    // 遠山
+    const ridge = (base, amp, ph, fill, rim) => { let j = 0; for (let x = 0; x < 320; x++) { j += (P.R() - .5) * 2.2; j = Math.max(-3, Math.min(3, j)); const top = Math.round(base - amp * (.55 + .45 * Math.sin(x * .027 + ph)) * (.6 + .4 * Math.sin(x * .071 + ph * 2)) + j); for (let y = top; y < 168; y++) P.set(x, y, y - top < 2 ? rim : fill); } };
+    ridge(148, 34, .8, '#2a2458', '#463c80'); ridge(160, 20, 3.6, '#1c1840', '#2e2860');
+    // 遠方的管制塔和小燈
+    P.rect(18, 118, 8, 50, '#14112e'); P.rect(24, 118, 2, 50, '#2e2860'); P.rect(12, 108, 20, 11, '#14112e'); P.rect(14, 111, 16, 4, '#ffd166'); P.rect(14, 111, 16, 1, '#fff3c4'); P.rect(21, 96, 1, 12, '#5d5a77'); P.set(21, 95, '#ff4141'); P.veil(20, 95, '#ff4141', .5); P.veil(22, 95, '#ff4141', .5);
+    for (let x = 50; x < 320; x += 37) { P.set(x, 165 - (x % 5), '#ffd166'); P.set(x + 1, 165 - (x % 5), '#ff9b3d'); }
+    // 發射場地面（平塗）
+    P.rect(0, 168, 320, 32, '#5d5a77'); P.rect(0, 168, 320, 2, '#b9b6d8'); P.rect(0, 170, 320, 1, '#8b8aa3');
+    for (let x = 0; x < 320; x += 64) P.rect(x, 171, 1, 25, '#4a4766');
+    for (let y = 196; y < 200; y++) for (let x = 0; x < 320; x++) P.set(x, y, ((x + (y - 196)) >> 3) % 2 ? INK : '#ffd166');
+    return P.url();
+  }
+  // 火箭 28×38（機頭朝上）
+  function spRocket(c) {
+    const P = Cv(28, 38), W = ['#8f8ca8', '#c5c2dc', '#f2f4f8', '#ffffff'], C = rampOf(c), SMR = { d1: 1, d2: 2, h1: 1 };
+    const part = (f, ramp, o) => { const M = Mask(28, 38); f(M); return paint(P, M, ramp, o); };
+    part(M => M.poly([[2, 36], [2, 28], [8, 22], [8, 34]]).poly([[26, 36], [26, 28], [20, 22], [20, 34]]), C, SMR);
+    part(M => M.rect(11, 33, 6, 4), ['#16142a', '#35324e', '#5d5a77', '#9a97b8'], SMR);
+    part(M => M.rect(8, 9, 12, 25).ell(14, 10, 6, 6), W, { d1: 1, d2: 3, h1: 2 });
+    part(M => M.poly([[8, 10], [14, 0], [20, 10]]).ell(14, 8, 6, 3), C, SMR);
+    P.ell(14, 17, 3.6, 3.6, INK); P.ell(14, 17, 2.6, 2.6, '#78c3f0'); P.set(13, 16, '#e6f6ff'); P.set(12, 16, '#e6f6ff');
+    P.rect(8, 25, 12, 2, c); P.rect(8, 25, 2, 2, C[3]); P.rect(18, 25, 2, 2, C[1]);
+    part(M => M.poly([[12, 36], [12, 29], [14, 26], [16, 29], [16, 36]]), C, SMR);
+    P.outline(); return P.url();
+  }
+
+  /* ================= 釣大魚：夕陽碼頭 ================= */
+  function bgFish() {
+    const P = Cv(320, 200, 59);
+    P.grad(0, 0, 320, 60, ['#f47a6a', '#ff9370', '#ffab7e', '#ffc291', '#ffd7a6', '#ffe9c2'], (u, v) => v);
+    // 夕陽和光暈
+    for (let y = 0; y < 60; y++) for (let x = 210; x < 320; x++) { const dd = Math.hypot(x - 264, y - 28); if (dd < 40) P.veil(x, y, '#fff0c0', (1 - dd / 40) * .6); }
+    P.ball(264, 28, 16, 16, ['#ff7a3a', '#ff9f43', '#ffbe5c', '#ffd98a'], -.3, -.7, true);
+    // 雲
+    const cloud = (x, y, s) => { [[0, 3, 6], [7, 0, 8], [16, 2, 6], [23, 4, 4]].forEach(([dx, dy, r]) => P.ell(x + dx * s, y + dy * s + r * s * .5, r * s, r * s * .6, '#fff4e0')); P.rect(x - 5 * s, y + 6 * s, 32 * s, 2 * s, '#ffc7a6'); P.rect(x - 2 * s, y + 5 * s, 26 * s, 1 * s, '#fff4e0'); };
+    cloud(70, 8, 1); cloud(180, 26, .7); cloud(8, 30, .6);
+    [[120, 16], [132, 12], [140, 18]].forEach(([x, y]) => { P.set(x, y, '#5d4a66'); P.set(x - 1, y - 1, '#5d4a66'); P.set(x + 1, y - 1, '#5d4a66'); P.set(x - 2, y - 1, '#5d4a66'); P.set(x + 2, y - 1, '#5d4a66'); });
+    // 遠方小島
+    { let j = 0; for (let x = 0; x < 320; x++) { j += (P.R() - .5) * 1.6; j = Math.max(-2, Math.min(2, j)); const top = Math.round(60 - 9 * (.5 + .5 * Math.sin(x * .03 + 1)) * (.5 + .5 * Math.sin(x * .011)) + j); for (let y = top; y < 60; y++) P.set(x, y, y - top < 1 ? '#c98aa0' : '#a8648a'); } }
+    // 海：幾層平塗，交界只有一小條抖色
+    const sea = ['#3f97d0', '#3385c2', '#2a74b2', '#2364a2', '#1e5592', '#1a4782'], ys = [60, 70, 86, 108, 136, 168, 200];
+    sea.forEach((c, i) => { P.rect(0, ys[i], 320, ys[i + 1] - ys[i], c); if (i) for (let x = 0; x < 320; x += 2) P.set(x + (i % 2), ys[i], sea[i - 1]); });
+    P.rect(0, 60, 320, 1, '#9ad0f0');
+    // 夕陽倒影（只在遠處海面）
+    for (let y = 62; y < 96; y += 3) { const w = 26 - (y - 62) * .6; P.rect(264 - w / 2 + Math.sin(y) * 3, y, w, 1, y < 76 ? '#ffe0a8' : '#ffc894'); }
+    // 海底：角落幾株海草
+    [[10, 16], [22, 11], [300, 14], [312, 10], [160, 8]].forEach(([x, hh]) => { for (let y = 0; y < hh; y++) { const sx = x + Math.round(Math.sin(y / 2.5) * 1.5); P.set(sx, 199 - y, y % 2 ? '#2f9e5b' : '#257a47'); P.set(sx + 1, 199 - y, '#1f6a3c'); } });
+    // 碼頭
+    [12, 52].forEach(x => { P.rect(x, 60, 6, 38, '#6e4a2a'); P.rect(x, 60, 2, 38, '#9a6a3f'); P.rect(x + 5, 60, 1, 38, '#3a2618'); P.rect(x, 82, 6, 16, '#2f4a6a'); P.rect(x - 2, 80, 10, 2, '#b8e0f6'); });
+    for (let r = 0; r < 4; r++) { const y = 46 + r * 4, b = ['#a86e40', '#b47a48', '#9e663a', '#ac7244'][r]; P.rect(0, y, 78, 4, b); P.rect(0, y, 78, 1, '#cf9458'); P.rect(0, y + 3, 78, 1, '#5e3d22'); for (let x = 6 + r * 5; x < 78; x += 22) P.rect(x, y, 1, 4, '#5e3d22'); }
+    P.rect(78, 46, 2, 16, '#5e3d22'); for (let x = 3; x < 76; x += 12) P.set(x, 48, '#3a2618');
+    return P.url();
+  }
+  // 大魚 52×22（頭朝左）、舊鞋 32×23
+  function spFish() {
+    const P = Cv(52, 22), O = ['#b85a00', '#f08a1a', '#ffb62e', '#ffe08a'], SMF = { d1: 1, d2: 3, h1: 2 };
+    const part = (f, ramp, o) => { const M = Mask(52, 22); f(M); return paint(P, M, ramp, o); };
+    part(M => M.poly([[36, 11], [50, 2], [47, 11], [50, 20]]), O, SMF);
+    part(M => M.poly([[16, 4], [30, 0], [32, 5]]).poly([[20, 18], [28, 21], [30, 17]]), ['#8f3a00', '#d06a10', '#f08a1a', '#ffc04a'], { d1: 1, d2: 2, h1: 1 });
+    part(M => M.ell(21, 11, 20, 8.5), O, SMF);
+    for (let x = 16; x < 36; x += 4) for (let y = 6; y < 16; y += 3) { P.set(x + (y % 2), y, O[1]); P.set(x + 1 + (y % 2), y + 1, O[1]); }
+    P.ell(21, 15, 14, 3, '#fff0c0'); P.ell(21, 14, 14, 2, O[2]);
+    P.path([[12, 5], [14, 11], [12, 17]], O[0], 1); P.ell(7, 9, 2.6, 2.6, '#ffffff'); P.ell(6.6, 9.2, 1.4, 1.4, INK); P.set(6, 8, '#ffffff'); P.rect(1, 13, 4, 1, '#a81f3c'); P.poly([[17, 11], [23, 9], [22, 14]], O[1]);
+    P.outline('#7a3b00'); return P.url();
+  }
+  function spBoot() {
+    const P = Cv(32, 23), Bt = ['#2e1c10', '#4e3420', '#6e4a2a', '#9a6a3f'];
+    const M = Mask(32, 23); M.rect(7, 1, 12, 15).poly([[4, 14], [19, 12], [28, 15], [31, 19], [31, 21], [4, 21]]); paint(P, M, Bt, { d1: 1, d2: 3, h1: 2 });
+    P.rect(7, 1, 12, 2, '#3a2618'); P.rect(3, 20, 29, 2, '#1d120a'); [5, 8, 11].forEach(y => { P.rect(13, y, 5, 1, '#d9cfb4'); P.set(12, y, '#2e1c10'); }); P.rect(22, 17, 6, 1, '#8ccdf3'); P.set(25, 5, '#8ccdf3'); P.set(25, 6, '#8ccdf3'); P.set(26, 8, '#b8e0f6'); P.rect(9, 9, 3, 3, '#3a2618');
+    P.outline('#1d120a'); return P.url();
+  }
+
   /* ================= 套用：換背景，角色交給 games-core.js（它會先看 ART.HD） ================= */
   const LANES = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b'];
   ART.BG.boss = bgBoss();
   ART.BG.race = bgRace();
+  ART.BG.bomb = bgBomb(); ART.SP.bomb = spBomb();
+  ART.BG.gacha = bgGacha(); ART.SP.machine = spMachine(); ART.SP.knob = spKnob();
+  ART.BG.rocket = bgRocket();
+  ART.BG.fish = bgFish();
   ART.HD = {
     Cv, Mask, paint, mix, rampOf,
     // 第 0–3 隻是小飛龍（第 0 隻也是洞穴魔王），後面是五款可愛怪獸各四色；打怪獸每題隨機出一隻
     mon: [...MONPAL.map(monster), ...Object.keys(CUTE).flatMap(k => CUTE[k].map(c => cute[k](c)))],
     horse: LANES.map((c, i) => [0, 1].map(f => horse(COATS[i][0], COATS[i][1], c, f))),
     weapon: weapons, cannon: cannon.src, balls: LANES.map(shell),
+    rocket: LANES.map(spRocket), fish: spFish(), boot: spBoot(),
   };
 })();
