@@ -283,7 +283,7 @@ body.wide #setup { grid-column: 1 / -1 }
 .games { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)) }
 
 /* ===== 點陣紙張字卡 ===== */
-.pp { border: .9cqw solid transparent !important; border-image: var(--pp-frame) 3 / .9cqw round !important; background: var(--pp-tex) 0 0 / 2.5cqw 2.5cqw, #fffaf0; image-rendering: pixelated; box-shadow: none !important; filter: drop-shadow(.45cqw .55cqw 0 rgba(29,27,46,.5)) }
+.pp { border: .9cqw solid transparent !important; border-image: var(--pp-frame) 3 / .9cqw round !important; background: #fffaf0; image-rendering: pixelated; box-shadow: none !important; filter: drop-shadow(.45cqw .55cqw 0 rgba(29,27,46,.5)) }
 .pp:hover { background-color: #fff3c4 }
 .pp.chosen { background-color: var(--gold) }
 .vcard.pp.win { outline: .7cqw solid var(--ok); background-color: #e3f7e8 }

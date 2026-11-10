@@ -538,7 +538,7 @@ function pixShaded(rows, pal, skip) {
   });
   SP.frame = frame('#fffaf0', '#d9cfb4', '#ffffff');
   SP.tex = canvas(8, 8, P => { [[1, 2], [5, 1], [3, 5], [6, 6], [0, 6]].forEach(([x, y]) => P.dot(x, y, 'rgba(120,100,60,.10)')); P.dot(4, 3, 'rgba(255,255,255,.5)'); });
-  SP.texLine = canvas(8, 8, P => { P.rect(0, 7, 8, 1, 'rgba(90,130,200,.22)'); P.dot(2, 3, 'rgba(120,100,60,.08)'); });
+  SP.texLine = canvas(8, 8, P => { P.rect(0, 7, 8, 1, 'rgba(90,130,200,.22)'); });
   const R = document.documentElement.style;
   R.setProperty('--pp-frame', `url(${SP.frame})`); R.setProperty('--pp-tex', `url(${SP.tex})`); R.setProperty('--pp-line', `url(${SP.texLine})`);
 
