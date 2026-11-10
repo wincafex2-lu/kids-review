@@ -30,12 +30,16 @@ function pix(rows, colors) {
   return c.toDataURL();
 }
 function pimg(src, w, h) { const i = el('img', 'px'); i.src = src; i.alt = ''; if (w) size(i, w, h); return i; }
-const MON = SPRITES.monsterPal.map(p => pix(SPRITES.monster, p));
+/* ART.HD 是重繪版角色（assets/games/art2.js）；沒載入時用舊的點陣圖 */
+const HD = ART.HD || {};
+const MON = HD.mon || SPRITES.monsterPal.map(p => pix(SPRITES.monster, p));
 const LANE = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b'];
-const HORSE = LANE.map(c => SPRITES.horse.map(r => pixShaded(r, { k: '#1d1b2e', c, f: '#f5c79a', j: c, r: '#fffaf0', b: '#9a6a3f', n: '#6e4a2a', d: '#3a2618' })));
+const HORSE = HD.horse || LANE.map(c => SPRITES.horse.map(r => pixShaded(r, { k: '#1d1b2e', c, f: '#f5c79a', j: c, r: '#fffaf0', b: '#9a6a3f', n: '#6e4a2a', d: '#3a2618' })));
 const ROCKET = LANE.map(c => pixShaded(SPRITES.rocket, { k: '#1d1b2e', r: c, w: '#f2f4f8', s: '#b9b6d8', g: '#5d5a77', b: '#78c3f0' }));
-const WEAPON = ['sword', 'arrow', 'hammer', 'wand'].map(k => ({ k, src: pixShaded(SPRITES[k], SPAL.weapon), w: SPRITES[k][0].length, h: SPRITES[k].length }));
-const CANNON = pixShaded(SPRITES.cannon, SPAL.cannon), FISH = pixShaded(SPRITES.fish, SPAL.fish), BOOT = pixShaded(SPRITES.boot, SPAL.boot);
+const WEAPON = ['sword', 'arrow', 'hammer', 'wand'].map(k => HD.weapon ? { k, ...HD.weapon[k] } : { k, src: pixShaded(SPRITES[k], SPAL.weapon), w: SPRITES[k][0].length, h: SPRITES[k].length });
+const CANNON = HD.cannon || pixShaded(SPRITES.cannon, SPAL.cannon), FISH = pixShaded(SPRITES.fish, SPAL.fish), BOOT = pixShaded(SPRITES.boot, SPAL.boot);
+// 砲彈：有重繪版就用點陣圖，沒有就用 CSS 畫的圓球
+const ballEl = i => { const b = el('div', 'ball2'); if (HD.balls) { b.classList.add('pxball'); b.style.backgroundImage = `url(${HD.balls[i]})`; } else b.style.setProperty('--c', LANE[i]); return b; };
 const setBG = (scene, key) => { scene.style.backgroundImage = `url(${ART.BG[key]})`; };
 
 /* ---------- 點陣人物（Agent 辦公室，只用站姿） ---------- */
@@ -1189,7 +1193,7 @@ const SIX = [
     else {
       items = opts.map((_, i) => {
         const it = at(el('div', 'item'), xs[i], 41);
-        if (kind === 'bullet') { const b = el('div', 'ball2'); b.style.setProperty('--c', LANE[i]); it.append(b); }
+        if (kind === 'bullet') { it.append(ballEl(i)); }
         else { const w = WEAPON[i]; it.append(pimg(w.src, w.w * .62, w.h * .62)); }
         scene.append(it); return it;
       });
@@ -1226,7 +1230,7 @@ const SIX = [
         hitFx(n, lv);
         await h.walkTo(x0, 380);
       } else if (kind === 'bullet') {
-        const b = el('div', 'shot'); const ball = el('div', 'ball2'); ball.style.setProperty('--c', LANE[k]); b.append(ball); at(b, 63, 42); scene.append(b);
+        const b = el('div', 'shot'); b.append(ballEl(k)); at(b, 63, 42); scene.append(b);
         SFX.boom(); anim(shooter, [{ transform: 'none' }, { transform: 'translateX(-1.5cqw)' }, { transform: 'none' }], 220, { fill: 'none' });
         puff(scene, 65, 42, 4, '#d3d1e6', 500, 2, -1);
         await tween(260, t => at(b, 63 + (MX - 63) * t, 42 - Math.sin(Math.PI * t) * 3 + (MY - 42) * t));

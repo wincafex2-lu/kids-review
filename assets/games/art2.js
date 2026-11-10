@@ -139,48 +139,166 @@
     return P.url();
   }
 
-  /* ================= 怪獸（面向左）62×54 ================= */
+  /* ---------- 剪影遮罩＋方向光上色：先畫出一個部位的形狀，再依「離右下邊多近、離左上邊多近」分成暗、中、亮 ---------- */
+  function Mask(w, h) {
+    const m = new Uint8Array(w * h);
+    const M = {
+      m, w, h,
+      set(x, y) { x = Math.floor(x); y = Math.floor(y); if (x >= 0 && y >= 0 && x < w && y < h) m[y * w + x] = 1; },
+      get(x, y) { return x >= 0 && y >= 0 && x < w && y < h && m[y * w + x] === 1; },
+      ell(cx, cy, rx, ry) { for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) if (((x + .5 - cx) / rx) ** 2 + ((y + .5 - cy) / ry) ** 2 <= 1) M.set(x, y); return M; },
+      rect(x, y, ww, hh) { for (let yy = y; yy < y + hh; yy++) for (let xx = x; xx < x + ww; xx++) M.set(xx, yy); return M; },
+      poly(pts) {
+        const ys = pts.map(p => p[1]), xs = pts.map(p => p[0]);
+        for (let y = Math.floor(Math.min(...ys)); y <= Math.max(...ys); y++) for (let x = Math.floor(Math.min(...xs)); x <= Math.max(...xs); x++) {
+          let inside = false; const px = x + .5, py = y + .5;
+          for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) inside = !inside; }
+          if (inside) M.set(x, y);
+        } return M;
+      },
+      // 沿著二次曲線的粗管子（半徑從 r0 變到 r1）
+      tube(a, b, c, r0, r1) { for (let i = 0; i <= 80; i++) { const t = i / 80, u = 1 - t, x = u * u * a[0] + 2 * u * t * b[0] + t * t * c[0], y = u * u * a[1] + 2 * u * t * b[1] + t * t * c[1], r = r0 + (r1 - r0) * t; M.ell(x, y, r, r); } return M; },
+      and(o) { for (let i = 0; i < m.length; i++) m[i] = m[i] && o.m[i] ? 1 : 0; return M; },
+      not(o) { for (let i = 0; i < m.length; i++) if (o.m[i]) m[i] = 0; return M; },
+    };
+    return M;
+  }
+  // ramp：[最暗, 暗, 中, 亮]
+  function paint(P, M, ramp, { d1 = 1, d2 = 3, h1 = 2 } = {}) {
+    const run = (x, y, dx, dy) => { let k = 1; while (k < 12 && M.get(x + dx * k, y + dy * k)) k++; return k; };
+    for (let y = 0; y < M.h; y++) for (let x = 0; x < M.w; x++) if (M.get(x, y)) {
+      const br = Math.min(run(x, y, 1, 1), run(x, y, 0, 1) + 1, run(x, y, 1, 0) + 1), tl = Math.min(run(x, y, -1, -1), run(x, y, 0, -1) + 1, run(x, y, -1, 0) + 1);
+      P.set(x, y, ramp[br <= d1 ? 0 : br <= d2 ? 1 : tl <= h1 ? 3 : 2]);
+    }
+    return M;
+  }
+  const rampOf = (base, dark = '#120c2a', light = '#fff7e0') => [mix(base, dark, .58), mix(base, dark, .28), base, mix(base, light, .38)];
+
+  /* ================= 怪獸：坐著的小飛龍（面向左）96×84 ================= */
   function monster(pal) {
-    const P = Cv(62, 54), B = ramp4(pal.m), W = ramp4(pal.wing), BE = [mix(pal.b, pal.m, .45), pal.b, mix(pal.b, '#ffffff', .5)], H = [mix(pal.h, '#7a5a20', .45), pal.h, mix(pal.h, '#ffffff', .5)];
-    // 翅膀、尾巴、背鰭（在身體後面）
-    P.poly([[42, 20], [57, 5], [60, 20], [55, 21], [58, 29], [46, 30]], (x, y) => (x + y > 70 ? W[0] : x - y > 38 ? W[2] : W[1]));
-    P.line(44, 21, 57, 6, W[3]); P.line(46, 24, 55, 21, W[0]);
-    P.poly([[46, 38], [58, 33], [60, 36], [59, 41], [50, 48]], (x, y) => (y > 41 ? B[0] : B[1])); P.poly([[57, 31], [61, 28], [60, 36]], H[1]);
-    [[47, 13], [51, 22], [53, 31]].forEach(([x, y]) => P.poly([[x - 5, y - 3], [x + 3, y - 2], [x - 3, y + 5]], (px, py) => (py > y ? H[0] : H[1])));
+    const W = 96, H = 84, P = Cv(W, H);
+    const B = rampOf(pal.m), WG = rampOf(pal.wing), BE = rampOf(pal.b, pal.m, '#ffffff'), HN = rampOf(pal.h, '#6a4a20', '#ffffff');
+    const part = (fn, ramp, o) => { const M = Mask(W, H); fn(M); return paint(P, M, ramp, o); };
+    const BIG = { d1: 2, d2: 6, h1: 3 }, MID = { d1: 1, d2: 4, h1: 2 }, SM = { d1: 1, d2: 2, h1: 1 };
+    // 翅膀（在身體後面）：皮膜＋骨架
+    part(M => M.poly([[54, 40], [60, 4], [70, 19], [83, 6], [84, 23], [95, 22], [88, 40], [74, 46]]), WG, MID);
+    [[60, 5], [83, 7], [94, 23]].forEach(([x, y]) => P.line(56, 38, x, y, WG[3]));
+    [[60, 5], [83, 7], [94, 23]].forEach(([x, y]) => P.line(57, 39, x + 1, y + 1, WG[0]));
+    part(M => M.ell(60, 5, 2, 2).ell(83, 7, 2, 2).ell(94, 23, 1.6, 1.6), HN, SM);
+    // 尾巴＋尾尖
+    part(M => M.poly([[80, 50], [86, 38], [94, 49], [88, 53]]), HN, SM);
+    part(M => M.tube([60, 70], [84, 82], [91, 64], 8, 4).tube([91, 64], [93, 56], [87, 50], 4, 2.2), B, MID);
+    // 背鰭
+    [[42, 20, 5], [49, 29, 6], [58, 36, 6], [67, 44, 6], [75, 55, 5]].forEach(([x, y, s]) => part(M => M.poly([[x - s, y + s * .4], [x + s * .9, y - s], [x + s, y + s]]), HN, SM));
+    // 後腿、後腳
+    part(M => M.ell(65, 63, 14, 15), B, BIG);
+    // 身體＋脖子
+    const body = part(M => M.ell(49, 56, 20, 21).tube([45, 44], [37, 35], [31, 22], 13, 9), B, BIG);
+    // 鱗片
+    [[58, 44], [63, 50], [56, 52], [61, 58], [54, 60], [59, 66], [44, 30], [47, 37], [41, 37]].forEach(([x, y]) => { P.set(x, y, B[1]); P.set(x + 1, y + 1, B[1]); P.set(x + 2, y, B[1]); });
+    // 肚皮：從喉嚨到肚子一節一節
+    const belly = Mask(W, H); belly.ell(38, 61, 11, 17).tube([37, 47], [29, 37], [25, 26], 6.5, 4).and(body); paint(P, belly, BE, MID);
+    for (let y = 28; y < 80; y += 5) for (let x = 0; x < W; x++) if (belly.get(x, y)) { P.set(x, y, BE[0]); if (belly.get(x, y + 1)) P.set(x, y + 1, BE[3]); }
+    // 後腿輪廓再蓋一次（壓在身體前面）
+    part(M => M.ell(66, 65, 11, 12), B, BIG);
     // 腳
-    [[21, 49], [41, 49]].forEach(([x, y]) => { P.ball(x, y, 8, 4, B, -.3, -.8); [-6, -3, 0].forEach(k => { P.rect(x + k - 1, y + 1, 2, 3, '#ffffff'); P.set(x + k, y + 3, '#d3d1e6'); }); });
-    // 身體、頭
-    P.ball(34, 34, 19, 16, B, -.5, -.7);
-    P.ball(26, 20, 17, 14, B, -.5, -.7);
-    for (let x = 14; x < 44; x++) P.set(x, 32 + Math.round(Math.sin((x - 14) / 30 * Math.PI) * 1.5), B[1]);
-    // 肚子
-    P.ball(26, 41, 12, 9.5, BE, -.4, -.7);
-    [36, 40, 44, 47].forEach((y, i) => { const hw = [9, 11, 10, 7][i]; P.rect(26 - hw, y, hw * 2, 1, BE[0]); });
-    // 角
-    P.poly([[13, 12], [9, 1], [20, 8]], (x, y) => (x > 13 + (y - 1) * .5 ? H[0] : H[1])); P.set(10, 2, H[2]); P.set(11, 4, H[2]);
-    P.poly([[32, 8], [38, 0], [41, 11]], (x, y) => (x > 38 ? H[0] : H[1])); P.set(37, 3, H[2]); P.set(36, 5, H[2]);
-    // 手
-    P.ball(9, 37, 5, 4, B, -.4, -.8); [[4, 36], [4, 39], [6, 41]].forEach(([x, y]) => { P.rect(x - 1, y, 2, 2, '#ffffff'); });
-    P.ball(45, 37, 5, 4.5, [B[0], B[0], B[1], B[2]], -.4, -.8);
-    // 眼睛（看左邊）、眉毛
-    [[17, 19, 5, 6], [31, 18, 5.5, 6.5]].forEach(([x, y, a, b]) => { P.ell(x, y, a + 1, b + 1, INK); P.ell(x, y, a, b, '#ffffff'); P.ell(x + 1.5, y + 2.5, a * .7, b * .5, '#e6e2f5'); P.ell(x, y, a, b * .6, '#ffffff'); P.ell(x - 2, y + 1, 2.6, 3, INK); P.set(x - 3, y - 1, '#ffffff'); P.set(x - 4, y - 1, '#ffffff'); P.set(x - 3, y - 2, '#ffffff'); });
-    P.line(11, 11, 22, 14.5, INK, 2.4); P.line(38, 10, 26, 14.5, INK, 2.4);
-    // 腮紅、鼻孔
-    P.ell(39, 26, 3, 2, pal.c); P.set(21, 25, B[0]); P.set(22, 25, B[0]); P.set(26, 25, B[0]); P.set(27, 25, B[0]);
-    // 嘴巴和牙齒
-    P.poly([[9, 27], [36, 27], [33, 33], [28, 35], [16, 35], [11, 32]], INK);
-    P.poly([[11, 28], [34, 28], [31, 32], [27, 33.5], [17, 33.5], [13, 31.5]], pal.r); P.ell(23, 33, 5, 1.6, mix(pal.r, '#ffb3c0', .6));
-    [12, 17, 22, 27, 31].forEach(x => { P.rect(x, 28, 3, 2, '#ffffff'); P.set(x + 1, 30, '#ffffff'); P.set(x + 2, 29, '#d3d1e6'); });
-    [15, 28].forEach(x => { P.rect(x, 31, 2, 2, '#ffffff'); P.set(x, 30, '#ffffff'); });
+    const foot = (x, y, r) => { part(M => M.ell(x, y, r, 4.5), B, MID); [-r + 1, -r + 5, -r + 9].forEach(k => { P.rect(x + k, y + 1, 3, 3, '#fffdf2'); P.set(x + k, y + 1, B[0]); P.set(x + k + 2, y + 3, '#cfc8b0'); P.set(x + k, y + 4, INK); }); };
+    foot(61, 79, 11); foot(37, 79, 9);
+    // 下巴、嘴巴裡面
+    part(M => M.ell(18, 31, 9.5, 4.2), B, SM);
+    P.poly([[6, 25], [27, 25], [27, 30], [9, 30]], pal.r); P.rect(12, 29, 12, 1, mix(pal.r, '#ffb3c0', .55));
+    // 頭：頭顱＋鼻吻
+    part(M => M.ell(30, 17, 12, 10.5).ell(15, 20, 11.5, 7), B, MID);
+    // 牙齒
+    [7, 11, 15, 19, 23].forEach(x => { P.rect(x, 26, 3, 2, '#fffdf2'); P.set(x + 1, 28, '#fffdf2'); P.set(x + 2, 27, '#cfc8b0'); });
+    [9, 21].forEach(x => { P.rect(x, 29, 2, 2, '#fffdf2'); P.set(x, 28, '#fffdf2'); });
+    // 鼻孔、鼻樑亮點
+    P.rect(6, 17, 2, 2, B[0]); P.set(8, 18, B[0]); P.rect(11, 15, 5, 1, B[3]);
+    // 角、耳鰭
+    part(M => M.poly([[33, 9], [48, 1], [45, 7], [41, 14]]), HN, SM);
+    part(M => M.poly([[25, 8], [35, 0], [34, 5], [31, 10]]), HN, SM);
+    part(M => M.poly([[38, 17], [49, 14], [48, 20], [43, 25]]), WG, SM); P.line(39, 18, 47, 16, WG[3]);
+    // 眼睛：黃色眼珠、直的瞳孔、兇兇的眉骨
+    P.poly([[20, 13], [27, 10.5], [31, 14], [28, 19], [22, 18.5]], INK);
+    P.poly([[21, 14], [27, 12], [30, 14.5], [27, 18], [22.5, 17.5]], pal.eye); P.rect(22, 17, 5, 1, mix(pal.eye, '#c96a2a', .5));
+    P.rect(24, 13, 2, 5, INK); P.set(23, 14, '#ffffff'); P.set(23, 13, '#ffffff');
+    P.line(18, 13.5, 31, 9.5, INK, 2.2); P.line(19, 12, 30, 8.5, B[3]);
+    // 臉頰
+    P.ell(33, 24, 3, 1.8, pal.c);
+    // 前手
+    part(M => M.tube([46, 50], [35, 53], [28, 62], 5.5, 4.2), B, MID);
+    [[23, 60], [24, 64], [27, 66]].forEach(([x, y]) => { P.rect(x, y, 3, 2, '#fffdf2'); P.set(x - 1, y + 1, '#fffdf2'); P.set(x + 2, y + 1, '#cfc8b0'); });
     P.outline();
     return P.url();
   }
   const MONPAL = [
-    { m: '#8a63e8', wing: '#5b3db0', b: '#eadcff', h: '#ffe9a8', r: '#c2283f', c: '#ff8fb1' },
-    { m: '#4fb36b', wing: '#2d7a47', b: '#eaf8c8', h: '#ffe08a', r: '#c2283f', c: '#ffb3a0' },
-    { m: '#ef6b4a', wing: '#a8352a', b: '#ffe6bf', h: '#f2f2f2', r: '#7a1730', c: '#ffd0a0' },
-    { m: '#3f9bd8', wing: '#26679a', b: '#dcf3ff', h: '#ffd166', r: '#c2283f', c: '#ffb3cf' },
+    { m: '#7d5be0', wing: '#e0568f', b: '#f3e4c8', h: '#ffe9a8', r: '#a81f3c', c: '#ff8fb1', eye: '#ffe066' },
+    { m: '#3fa864', wing: '#e89a3a', b: '#f2efc4', h: '#fff0b8', r: '#a81f3c', c: '#ffb3a0', eye: '#ffe066' },
+    { m: '#e2573e', wing: '#f2b13a', b: '#ffe9c2', h: '#f5f0e6', r: '#7a1730', c: '#ffc79a', eye: '#fff07a' },
+    { m: '#3b8fd6', wing: '#7a5be0', b: '#e6f2f0', h: '#ffd978', r: '#a81f3c', c: '#ffb3cf', eye: '#ffe066' },
   ];
+
+  /* ================= 武器（都指向右邊）、砲彈、大砲 ================= */
+  const STEEL = ['#4a5068', '#8a93a8', '#c5ccda', '#f4f7fb'], GOLD = ['#8a5a10', '#d49a1e', '#ffd166', '#fff3c4'], WOOD = ['#3a2416', '#6e4526', '#9a6a3f', '#c99560'], IRON = ['#16142a', '#35324e', '#5d5a77', '#9a97b8'];
+  function sprite(w, h, fn) { const P = Cv(w, h); const part = (f, ramp, o) => { const M = Mask(w, h); f(M); return paint(P, M, ramp, o); }; fn(P, part); P.outline(); return { src: P.url(), w: w / 2.7, h: h / 2.7 }; }
+  const SM1 = { d1: 1, d2: 2, h1: 1 };
+  const weapons = {
+    sword: sprite(46, 18, (P, part) => {
+      part(M => M.poly([[15, 6], [39, 6], [45, 9], [39, 12], [15, 12]]), STEEL, SM1);
+      P.rect(16, 9, 22, 1, STEEL[1]); P.rect(16, 8, 22, 1, STEEL[3]); P.rect(16, 6, 23, 1, '#ffffff'); P.set(40, 7, '#ffffff'); P.set(41, 8, '#ffffff');
+      part(M => M.rect(4, 7, 9, 4), WOOD, SM1); [5, 8, 11].forEach(x => P.rect(x, 7, 1, 4, WOOD[0]));
+      part(M => M.rect(12, 1, 4, 16).ell(14, 2, 2.5, 2.5).ell(14, 16, 2.5, 2.5), GOLD, SM1);
+      part(M => M.ell(3, 9, 3, 3), GOLD, SM1);
+      P.rect(13, 8, 2, 2, '#e8414f'); P.set(13, 8, '#ff9aa6');
+    }),
+    arrow: sprite(44, 13, (P, part) => {
+      part(M => M.poly([[1, 0], [10, 0], [14, 6], [5, 6]]).poly([[1, 13], [10, 13], [14, 7], [5, 7]]), ['#8f1f33', '#c2283f', '#e8414f', '#ff8a8a'], SM1);
+      P.line(4, 1, 8, 5, '#fffaf0'); P.line(7, 1, 11, 5, '#fffaf0'); P.line(4, 11, 8, 7, '#fffaf0'); P.line(7, 11, 11, 7, '#fffaf0');
+      part(M => M.rect(3, 5, 32, 3), WOOD, SM1); P.rect(4, 5, 30, 1, WOOD[3]);
+      part(M => M.rect(30, 4, 3, 5), GOLD, SM1);
+      part(M => M.poly([[32, 0], [44, 6.5], [32, 13], [35, 6.5]]), STEEL, SM1); P.line(34, 2, 41, 6, '#ffffff');
+    }),
+    hammer: sprite(42, 24, (P, part) => {
+      part(M => M.rect(3, 10, 26, 4), WOOD, SM1); [7, 10, 13].forEach(x => P.rect(x, 10, 1, 4, WOOD[0])); P.rect(15, 10, 12, 1, WOOD[3]);
+      part(M => M.ell(2, 12, 2.6, 3), GOLD, SM1);
+      part(M => M.rect(27, 2, 13, 20), STEEL, { d1: 1, d2: 3, h1: 2 });
+      part(M => M.rect(25, 0, 4, 24), IRON, SM1); part(M => M.rect(38, 0, 4, 24), IRON, SM1);
+      part(M => M.poly([[33.5, 8], [37, 12], [33.5, 16], [30, 12]]), GOLD, SM1);
+    }),
+    wand: sprite(44, 22, (P, part) => {
+      part(M => M.rect(1, 10, 26, 3), ['#2a1740', '#4a2a70', '#6b3fa0', '#a57be0'], SM1); [5, 11, 17, 23].forEach(x => { P.rect(x, 10, 2, 3, GOLD[2]); P.set(x, 10, GOLD[3]); });
+      part(M => M.rect(25, 8, 3, 7), GOLD, SM1);
+      const star = []; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 4 : 9.5; star.push([34 + Math.cos(a) * r, 11.5 + Math.sin(a) * r]); }
+      part(M => M.poly(star), GOLD, SM1); P.ell(33, 10, 1.6, 1.6, '#fffdf2');
+      [[42, 2], [26, 3], [42, 19]].forEach(([x, y]) => { P.set(x, y, '#ffffff'); P.set(x - 1, y, '#fff3c4'); P.set(x + 1, y, '#fff3c4'); P.set(x, y - 1, '#fff3c4'); P.set(x, y + 1, '#fff3c4'); });
+    }),
+  };
+  // 砲彈：亮面漆球，腰上一圈鉚釘鐵箍
+  function shell(col) {
+    const P = Cv(28, 28), R5 = [mix(col, '#120c2a', .62), mix(col, '#120c2a', .34), col, mix(col, '#ffffff', .3), mix(col, '#ffffff', .6)];
+    P.ball(14, 14, 12, 12, R5, -.55, -.65, true);
+    for (let x = 2; x < 26; x++) { const k = (x - 14) / 12, yb = 15 + Math.round(3.2 * (1 - k * k)); for (let d = -1; d <= 1; d++) if (P.has(x, yb + d) && (k * k + ((yb + d - 14) / 12) ** 2) < .9) P.set(x, yb + d, d < 0 ? IRON[3] : d > 0 ? IRON[0] : IRON[2]); if (x % 5 === 2) P.set(x, yb, '#fff3c4'); }
+    P.ell(9, 8, 3, 2, '#ffffff'); P.set(12, 6, '#ffffff'); P.set(6, 11, R5[4]);
+    for (let a = .3; a < 1.3; a += .08) P.set(14 + Math.cos(a) * 11, 14 + Math.sin(a) * 11, R5[2]);
+    P.outline(); return P.url();
+  }
+  const cannon = sprite(58, 44, (P, part) => {
+    // 引信
+    P.line(9, 7, 6, 3, '#8a5a35'); P.set(5, 2, '#ff9b3d'); P.set(4, 1, '#ffd166'); P.set(6, 1, '#ffd166'); P.set(5, 0, '#fff3c4'); P.set(3, 3, '#ffd166');
+    // 砲架
+    part(M => M.poly([[6, 27], [42, 24], [47, 35], [4, 38]]), WOOD, { d1: 1, d2: 3, h1: 2 }); P.rect(8, 31, 36, 1, WOOD[0]);
+    // 砲管
+    part(M => M.poly([[9, 6], [51, 8], [51, 22], [9, 24]]).ell(9, 15, 8, 9), IRON, { d1: 2, d2: 5, h1: 3 });
+    part(M => M.ell(2, 15, 2.4, 2.6), IRON, SM1);
+    P.rect(10, 9, 38, 1, '#cfcde6'); P.rect(12, 10, 20, 1, IRON[3]);
+    [[17, 5, 20], [31, 6, 18]].forEach(([x, y, hh]) => part(M => M.rect(x, y, 3, hh), ['#16142a', '#46426e', '#7a779c', '#b9b6d8'], SM1));
+    part(M => M.rect(49, 5, 6, 20), ['#16142a', '#46426e', '#7a779c', '#b9b6d8'], SM1); P.rect(55, 9, 2, 12, '#0a0818');
+    // 輪子
+    part(M => M.ell(27, 32, 11.5, 11.5), IRON, SM1); P.ell(27, 32, 9, 9, '#24160e');
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + .2; P.line(27, 32, 27 + Math.cos(a) * 9, 32 + Math.sin(a) * 9, WOOD[2], 2); P.line(27, 32, 27 + Math.cos(a) * 8, 31.4 + Math.sin(a) * 8, WOOD[3]); }
+    part(M => M.ell(27, 32, 3.4, 3.4), GOLD, SM1);
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + .6; P.set(27 + Math.cos(a) * 10.4, 32 + Math.sin(a) * 10.4, '#cfcde6'); }
+  });
 
   /* ================= 賽馬（面向右）54×38，兩格：收腿／伸展 ================= */
   const COATS = [['#a05c34', '#3a2618'], ['#4a4458', '#1d1b2e'], ['#e9e3d8', '#9a94a8'], ['#d3a052', '#fff3c4']];
@@ -219,10 +337,14 @@
     return P.url();
   }
 
-  /* ================= 套用 ================= */
+  /* ================= 套用：換背景，角色交給 games-core.js（它會先看 ART.HD） ================= */
+  const LANES = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b'];
   ART.BG.boss = bgBoss();
   ART.BG.race = bgRace();
-  if (typeof MON !== 'undefined') MON.splice(0, MON.length, ...MONPAL.map(monster));
-  if (typeof HORSE !== 'undefined' && typeof LANE !== 'undefined') LANE.forEach((c, i) => { HORSE[i] = [0, 1].map(f => horse(COATS[i][0], COATS[i][1], c, f)); });
-  ART.HD = { Cv, mix, ramp4, monster, horse, MONPAL, COATS };
+  ART.HD = {
+    Cv, Mask, paint, mix, rampOf,
+    mon: MONPAL.map(monster),
+    horse: LANES.map((c, i) => [0, 1].map(f => horse(COATS[i][0], COATS[i][1], c, f))),
+    weapon: weapons, cannon: cannon.src, balls: LANES.map(shell),
+  };
 })();
