@@ -269,6 +269,77 @@
     { m: '#3f9bd8', b: '#d9f1ff', h: '#ffd166', r: '#a81f3c', c: '#ffb3cf' },
   ];
 
+  /* ================= 可愛怪獸候選（面向左）96×84：果凍怪、獨眼毛球、小恐龍、小幽靈、小惡魔 ================= */
+  const BIGO = { d1: 2, d2: 7, h1: 4 }, MIDO = { d1: 1, d2: 4, h1: 2 }, SMO = { d1: 1, d2: 2, h1: 1 };
+  function critter(fn) { const W = 96, H = 84, P = Cv(W, H); const part = (f, ramp, o) => { const M = Mask(W, H); f(M); return paint(P, M, ramp, o); }; fn(P, part); P.outline(); return P.url(); }
+  // 黑亮的豆豆眼
+  const bean = (P, x, y, rx, ry) => { P.ell(x, y, rx, ry, INK); P.rect(Math.round(x - rx * .55), Math.round(y - ry * .6), 2, 2, '#ffffff'); P.set(Math.round(x + rx * .3), Math.round(y + ry * .35), '#b9b6d8'); };
+  const blush = (P, x, y, c) => { P.ell(x, y, 4.5, 2.6, c); P.set(x - 2, y, mix(c, '#ffffff', .5)); P.set(x + 1, y, mix(c, '#ffffff', .5)); };
+  const cute = {
+    // A 果凍怪：圓圓的果凍身體、頭上長小芽、開心大嘴
+    slime: c => critter((P, part) => {
+      const B = rampOf(c, '#101040', '#ffffff');
+      const LF = rampOf('#5cc46a');
+      part(M => M.rect(47, 14, 3, 12), LF, SMO); part(M => M.ell(40, 12, 8, 4.5), LF, SMO); part(M => M.ell(57, 10, 8, 4.5), LF, SMO); P.line(35, 12, 45, 12, LF[1]); P.line(52, 10, 62, 10, LF[1]);
+      part(M => M.ell(48, 58, 37, 24).ell(48, 48, 30, 26).not(Mask(96, 84).rect(0, 81, 96, 3)), B, BIGO);
+      P.ell(27, 38, 6, 3.5, '#ffffff'); P.ell(37, 33, 2, 1.5, '#ffffff');
+      bean(P, 28, 58, 4, 5.5); bean(P, 52, 58, 4, 5.5);
+      blush(P, 19, 66, '#ff9ab8'); blush(P, 61, 66, '#ff9ab8');
+      P.poly([[33, 63], [47, 63], [46, 69], [40, 72], [34, 69]], INK); P.poly([[34, 64], [46, 64], [45, 68], [40, 70.5], [35, 68]], '#a81f3c'); P.ell(40, 69, 3.5, 1.8, '#ff8aa0');
+    }),
+    // B 獨眼毛球：一顆大眼睛、炸毛、小角、鳥腳
+    fuzz: c => critter((P, part) => {
+      const B = rampOf(c), HN = rampOf('#ffe9a8', '#6a4a20', '#ffffff'), FT = rampOf('#ff9b3d');
+      part(M => M.poly([[30, 18], [26, 2], [38, 14]]).poly([[66, 18], [72, 2], [59, 14]]), HN, SMO);
+      [[34, 79], [60, 79]].forEach(([x, y]) => { part(M => M.rect(x - 1, y - 8, 3, 8), FT, SMO); part(M => M.ell(x - 2, y + 1, 7, 3), FT, SMO); });
+      part(M => { M.ell(48, 44, 30, 28); for (let i = 0; i < 26; i++) { const a = i / 26 * Math.PI * 2, r0 = 27, r1 = 35 + (i % 2) * 3, w = .13; M.poly([[48 + Math.cos(a - w) * r0, 44 + Math.sin(a - w) * r0 * .93], [48 + Math.cos(a + .05) * r1, 44 + Math.sin(a + .05) * r1 * .93], [48 + Math.cos(a + w) * r0, 44 + Math.sin(a + w) * r0 * .93]]); } }, B, BIGO);
+      P.ell(40, 40, 16, 16, INK); P.ell(40, 40, 14, 14, '#ffffff'); P.ell(42, 44, 12, 9, '#e6e2f5'); P.ell(39.5, 38.5, 13, 11, '#ffffff');
+      P.ell(36, 42, 8, 8, '#3fb8c8'); P.ell(36, 42, 8, 8, '#2a8fa0'); P.ell(35, 41, 6.5, 6.5, '#48c7d6'); P.ell(35, 42, 4, 4, INK); P.rect(31, 37, 3, 3, '#ffffff'); P.set(38, 45, '#ffffff');
+      P.poly([[30, 60], [52, 60], [49, 66], [33, 66]], INK); P.poly([[31, 61], [51, 61], [48.5, 65], [33.5, 65]], '#a81f3c');
+      [33, 39, 45].forEach(x => { P.rect(x, 61, 3, 2, '#fffdf2'); P.set(x + 1, 63, '#fffdf2'); });
+      blush(P, 62, 54, '#ff9ab8');
+    }),
+    // C 小恐龍：大頭、短手、背上圓圓的背板
+    dino: c => critter((P, part) => {
+      const B = rampOf(c), BE = rampOf('#fff1c9', c, '#ffffff'), PL = rampOf('#ff9b3d');
+      part(M => M.tube([70, 68], [90, 80], [93, 58], 9, 2.5), B, MIDO);
+      [[52, 13, 6], [64, 22, 6.5], [75, 36, 6.5], [82, 51, 5.5]].forEach(([x, y, r]) => part(M => M.ell(x, y, r, r), PL, SMO));
+      [[50, 79], [70, 79]].forEach(([x, y]) => { part(M => M.ell(x, y, 9.5, 4.5), B, MIDO); [-8, -4].forEach(k => P.rect(x + k, y + 1, 2, 3, '#fffdf2')); });
+      const body = part(M => M.ell(61, 60, 20, 20), B, BIGO);
+      const belly = Mask(96, 84); belly.ell(52, 66, 11, 14).and(body); paint(P, belly, BE, MIDO);
+      part(M => M.ell(36, 33, 26, 22).ell(19, 43, 16, 12), B, BIGO);
+      part(M => M.ell(41, 62, 6, 4.5), B, SMO); P.rect(35, 63, 2, 2, '#fffdf2'); P.rect(36, 65, 2, 2, '#fffdf2');
+      bean(P, 30, 32, 4.5, 6.5); P.rect(5, 38, 2, 2, B[0]); P.rect(10, 37, 2, 2, B[0]);
+      blush(P, 37, 45, '#ff9ab8');
+      P.path([[6, 49], [12, 51.5], [20, 52], [27, 50]], INK, 1.6); P.rect(13, 52, 3, 3, '#fffdf2'); P.set(14, 55, '#fffdf2');
+      P.ell(26, 16, 5, 2.5, B[3]);
+    }),
+    // D 小幽靈：飄飄的下襬、吐舌頭、舉著兩隻小手
+    ghost: c => critter((P, part) => {
+      const B = [mix(c, '#3a2f7a', .55), mix(c, '#3a2f7a', .2), c, '#ffffff'];
+      part(M => M.ell(13, 44, 8, 6).ell(83, 40, 8, 6), B, SMO);
+      part(M => M.ell(48, 36, 30, 30).rect(18, 36, 61, 34).ell(28, 70, 10, 9).ell(48, 71, 10, 9).ell(68, 70, 10, 9), B, BIGO);
+      bean(P, 34, 34, 5, 7); bean(P, 56, 34, 5, 7);
+      blush(P, 25, 45, '#ff9ab8'); blush(P, 65, 45, '#ff9ab8');
+      P.ell(45, 50, 7.5, 6, INK); P.ell(45, 50, 6, 4.6, '#7a1730'); P.ell(45, 56, 4.6, 5.5, INK); P.ell(45, 55.5, 3.4, 4.6, '#ff8aa0'); P.rect(45, 53, 1, 6, '#e06a86');
+    }),
+    // E 小惡魔：圓圓的身體、小角、蝙蝠翅膀、箭頭尾巴、一顆虎牙
+    imp: c => critter((P, part) => {
+      const B = rampOf(c), WG = rampOf(mix(c, '#2a1050', .45)), HN = rampOf('#fff0c4', '#6a4a20', '#ffffff'), BE = rampOf(mix(c, '#fff1c9', .7), c, '#ffffff');
+      part(M => M.poly([[24, 44], [2, 24], [8, 40], [0, 44], [9, 50], [4, 58], [26, 58]]).poly([[70, 44], [92, 24], [86, 40], [95, 44], [85, 50], [90, 58], [68, 58]]), WG, MIDO);
+      part(M => M.tube([68, 68], [90, 76], [88, 58], 2.4, 2).poly([[82, 58], [88, 47], [94, 58], [88, 55]]), WG, SMO);
+      part(M => M.poly([[25, 30], [18, 9], [34, 24]]).poly([[69, 30], [76, 9], [60, 24]]), HN, SMO);
+      [[36, 79], [58, 79]].forEach(([x, y]) => part(M => M.ell(x, y, 8.5, 4.5), B, MIDO));
+      const body = part(M => M.ell(47, 50, 28, 27), B, BIGO);
+      const belly = Mask(96, 84); belly.ell(45, 66, 14, 10).and(body); paint(P, belly, BE, MIDO);
+      bean(P, 34, 46, 4.5, 6); bean(P, 56, 46, 4.5, 6);
+      P.line(27, 37, 37, 40, INK, 2); P.line(63, 37, 53, 40, INK, 2);
+      blush(P, 25, 55, '#ffb0c8'); blush(P, 65, 55, '#ffb0c8');
+      P.path([[36, 56], [40, 59.5], [46, 60.5], [52, 59.5], [56, 56]], INK, 1.8); P.rect(38, 59, 3, 3, '#fffdf2'); P.set(39, 62, '#fffdf2');
+    }),
+  };
+  const CUTE = [['slime', '果凍怪', '#4fb8e8'], ['fuzz', '獨眼毛球', '#8a63e8'], ['dino', '小恐龍', '#5cc46a'], ['ghost', '小幽靈', '#eef0ff'], ['imp', '小惡魔', '#ef5b6b']];
+
   /* ================= 武器（都指向右邊）、砲彈、大砲 ================= */
   const STEEL = ['#4a5068', '#8a93a8', '#c5ccda', '#f4f7fb'], GOLD = ['#8a5a10', '#d49a1e', '#ffd166', '#fff3c4'], WOOD = ['#3a2416', '#6e4526', '#9a6a3f', '#c99560'], IRON = ['#16142a', '#35324e', '#5d5a77', '#9a97b8'];
   function sprite(w, h, fn) { const P = Cv(w, h); const part = (f, ramp, o) => { const M = Mask(w, h); f(M); return paint(P, M, ramp, o); }; fn(P, part); P.outline(); return { src: P.url(), w: w / 2.7, h: h / 2.7 }; }
@@ -374,7 +445,8 @@
   ART.BG.race = bgRace();
   ART.HD = {
     Cv, Mask, paint, mix, rampOf,
-    mon: [...MONPAL.map(monster), ...GOOFYPAL.map(goofy)], // 前四隻小飛龍（第 0 隻是洞穴魔王）、後四隻傻呼呼圓怪獸
+    mon: MONPAL.map(monster), // 四隻小飛龍（第 0 隻是洞穴魔王）
+    cand: CUTE.map(([k, name, c]) => ({ k, name, src: cute[k](c) })), // 可愛怪獸候選，等挑選
     horse: LANES.map((c, i) => [0, 1].map(f => horse(COATS[i][0], COATS[i][1], c, f))),
     weapon: weapons, cannon: cannon.src, balls: LANES.map(shell),
   };
