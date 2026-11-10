@@ -27,6 +27,20 @@ window.PEOPLE_HD = function (rows, colors, plainFace) {
     eyes.forEach(([x, y]) => { const X = x * 2, Y = y * 2; for (let yy = Y - 1; yy <= Y + 1; yy++) { put(X, yy, 'K'); put(X + 1, yy, 'K'); } put(X, Y - 1, 'I'); const bx = x < 8 ? X - 2 : X + 2; if (skin(at2(bx, Y + 3)) || at2(bx, Y + 3) === '5') { put(bx, Y + 3, '1'); put(bx + 1, Y + 3, '1'); } });
     if (plainFace) { const my = eyes[0][1] * 2 + 5; if (skin(at2(15, my)) && skin(at2(16, my))) { put(15, my, '2'); put(16, my, '2'); } }
   }
+  // 皇冠（正面）：原圖兩邊的尖角是斜一格出去的，放大後會往外歪；改成直邊、三個尖角重畫
+  const cr = rows.findIndex((r, i) => i < 4 && r.slice(3, 13) === 'Y.KKYYKK.Y');
+  if (cr >= 0) {
+    const y0 = cr * 2, tips = [[[6, 7], [15, 16], [24, 25]], [[6, 8], [14, 17], [23, 25]], [[6, 9], [13, 18], [22, 25]]];
+    const gold = (x, y) => y >= 4 ? (y <= 7 && x >= 6 && x <= 25) : y >= 1 && tips[y - 1].some(([a, b]) => x >= a && x <= b);
+    col['6'] = mixc(col.Y || '#ffcc4d', '#ffffff', .55);
+    for (let y = 0; y < 8; y++) for (let x = 4; x <= 27; x++) {
+      let near = false; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (gold(x + dx, y + dy)) near = true;
+      let ch = '.';
+      if (gold(x, y)) ch = y === 7 ? 'y' : (y >= 5 && y <= 6 && x >= 14 && x <= 17) ? 'R' : (y < 4 && tips[y - 1].some(([a]) => x === a)) || (y === 4 && (x < 10 || (x > 12 && x < 19) || x > 21)) ? '6' : 'Y';
+      else if (near || (y >= 1 && (gold(x + 2, y) || gold(x - 2, y))) || y === 2 && x > 5 && x < 26) ch = 'K';
+      put(x, y0 + y, ch);
+    }
+  }
   const c = document.createElement('canvas'); c.width = W * 2; c.height = H * 2; const g = c.getContext('2d');
   G.forEach((row, y) => row.forEach((ch, x) => { if (col[ch]) { g.fillStyle = col[ch]; g.fillRect(x, y, 1, 1); } }));
   return c.toDataURL();

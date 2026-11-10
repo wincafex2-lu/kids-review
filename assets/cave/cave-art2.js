@@ -286,6 +286,45 @@
     return P.url();
   }
 
+  /* ---------- 礦坑列車的四台車（64×40，舊圖兩倍；輪子底部在最後一列），車頭朝右 ---------- */
+  const rideWheels = (P, xs) => xs.forEach(x => { P.ell(x, 32.5, 5, 5, '#5d5a77'); P.ell(x, 33.5, 5, 4, '#46435e'); P.ell(x, 32.5, 2.8, 2.8, '#d3d1e6'); P.ell(x, 32.5, 1.1, 1.1, INK); });
+  const ride = draw => { const P = Cv(64, 40); draw(P); P.outline(INK, 2); return P.url(); };
+  ART.SP.rides = [
+    // 礦車：梯形鐵斗裝滿礦石
+    ride(P => {
+      [[13, '#9a8a7a', '#b9ab9b'], [23, '#78e0f0', '#d6f7fc'], [33, '#9a8a7a', '#b9ab9b'], [43, '#78e0f0', '#d6f7fc'], [52, '#9a8a7a', '#b9ab9b']].forEach(([x, c, h]) => { P.ell(x, 7, 5, 4.4, c); P.rect(x - 3, 4, 3, 2, h); });
+      rideWheels(P, [17, 47]);
+      P.poly([[5, 12], [59, 12], [54, 29], [10, 29]], '#8b8aa3'); P.poly([[9, 23], [55, 23], [54, 29], [10, 29]], '#5d5a77');
+      P.rect(4, 9, 56, 4, '#c9c7dc'); P.rect(4, 12, 56, 1, '#8b8aa3');
+      P.rect(19, 13, 2, 16, '#5d5a77'); P.rect(43, 13, 2, 16, '#5d5a77');
+    }),
+    // 鑽地車：黃色車身，前面一支大鑽頭
+    ride(P => {
+      rideWheels(P, [13, 35]);
+      P.rect(8, 4, 14, 9, '#5d5a77'); P.rect(11, 6, 8, 4, '#9fd4f5'); P.rect(11, 6, 8, 1, '#e6f6ff');
+      P.rect(3, 12, 40, 16, '#ffd166'); P.rect(3, 12, 40, 2, '#fff3c4'); P.rect(3, 23, 40, 5, '#c98a00');
+      for (let x = 6; x < 40; x += 9) P.rect(x, 24, 4, 4, INK);
+      P.poly([[45, 10], [61, 20], [45, 30]], x => Math.floor((x - 45) / 3) % 2 ? '#8b8aa3' : '#d3d1e6'); P.rect(43, 10, 3, 20, '#5d5a77');
+    }),
+    // 吉普車：綠色、防滾架、車頭燈
+    ride(P => {
+      P.rect(8, 2, 3, 14, '#8b8aa3'); P.rect(8, 2, 27, 3, '#8b8aa3'); P.rect(32, 2, 3, 14, '#8b8aa3'); P.rect(8, 2, 27, 1, '#d3d1e6');
+      P.poly([[38, 6], [41, 6], [44, 16], [38, 16]], '#9fd4f5');
+      rideWheels(P, [15, 49]);
+      P.rect(3, 16, 58, 12, '#2f9e5b'); P.rect(3, 16, 58, 2, '#8fe0a2'); P.rect(3, 24, 58, 4, '#1f6e3e');
+      P.rect(43, 13, 18, 4, '#2f9e5b'); P.rect(43, 13, 18, 1, '#8fe0a2');
+      P.rect(58, 19, 3, 4, '#fff3c4'); P.rect(5, 19, 9, 4, '#5d5a77'); P.rect(32, 18, 1, 9, '#1f6e3e');
+    }),
+    // 火箭推車：紅色車身、尖頭、後面噴嘴
+    ride(P => {
+      P.poly([[18, 10], [11, 3], [20, 3], [28, 10]], '#a12a3c');
+      rideWheels(P, [23, 47]);
+      P.poly([[14, 13], [5, 10], [5, 28], [14, 25]], '#5d5a77'); P.rect(5, 10, 3, 18, '#8b8aa3');
+      P.rect(14, 10, 38, 18, '#e8414f'); P.rect(14, 10, 38, 2, '#ff9a9a'); P.rect(14, 23, 38, 5, '#a12a3c');
+      P.poly([[52, 10], [62, 19], [52, 28]], '#e8414f'); P.poly([[52, 23], [58, 23], [52, 28]], '#a12a3c'); P.rect(52, 10, 3, 2, '#ff9a9a');
+      P.ell(33, 17.5, 5, 5, INK); P.ell(33, 17.5, 3.4, 3.4, '#9fd4f5'); P.rect(31, 15, 2, 2, '#e6f6ff');
+    }),
+  ];
   Object.assign(ART.SP, ART.HD.tunnel('cave')); ART.SP.beam = ART.HD.spBeam('rgba(160,240,255,.28)');
   Object.assign(BG, { ox: ox(), bridge: bridge(), rail: rail(), door: door(), lair: lair(), map: map(), lab: lab(), vault: vault(), bomb: bomb(), fish: fish(), chase: chase() });
 })();

@@ -981,14 +981,15 @@
     P.clear(8, 14, 20, 16);
     return P.url();
   }
+  // 車廂：底盤和輪子底部的高度跟火車頭一樣（底盤在輪底往上 16–23 列，最後一列留空）
   function spCar(c) {
     const P = Cv(76, 52), L = mix(c, '#ffffff', .45), D = mix(c, '#000000', .28);
     box(P, 2, 0, 72, 8, '#5d5a77', '#a7a4c4', null, 2);
-    box(P, 0, 6, 76, 34, c, L, D, 3, 5);
-    P.rect(2, 26, 72, 4, '#fffaf0'); P.rect(2, 29, 72, 1, '#d9d3c2');
-    for (let x = 6; x < 66; x += 17) { P.rect(x, 10, 14, 14, INK); P.rect(x + 2, 12, 10, 10, '#9fd4f5'); P.rect(x + 2, 12, 10, 3, '#e6f6ff'); P.rect(x + 2, 12, 3, 10, '#e6f6ff'); }
-    P.rect(4, 38, 68, 5, INK); P.rect(6, 40, 64, 1, '#5d5a77'); P.rect(0, 38, 4, 4, INK); P.rect(72, 38, 4, 4, INK);
-    [13, 29, 47, 63].forEach(x => { P.ell(x, 45, 7, 7, INK); P.ell(x, 45, 5, 5, '#a7a4c4'); for (let y = 45; y < 51; y++) for (let xx = x - 6; xx < x + 6; xx++) if (Math.hypot(xx + .5 - x, y + .5 - 45) <= 5 && y > 45) P.set(xx, y, '#6b6890'); P.ell(x, 45, 2.2, 2.2, INK); P.set(x - 1, 44, '#fff3c4'); });
+    box(P, 0, 6, 76, 27, c, L, D, 2, 4);
+    P.rect(2, 23, 72, 3, '#fffaf0'); P.rect(2, 25, 72, 1, '#d9d3c2');
+    for (let x = 6; x < 66; x += 17) { P.rect(x, 10, 14, 12, INK); P.rect(x + 2, 12, 10, 8, '#9fd4f5'); P.rect(x + 2, 12, 10, 2, '#e6f6ff'); P.rect(x + 2, 12, 3, 8, '#e6f6ff'); }
+    P.rect(2, 29, 72, 7, INK); P.rect(4, 31, 68, 3, '#3a3550'); P.rect(0, 29, 4, 6, INK); P.rect(72, 29, 4, 6, INK);
+    [12, 28, 48, 64].forEach(x => { P.ell(x, 43.5, 7.5, 7.5, INK); P.ell(x, 43.5, 5.5, 5.5, '#d3d1e6'); for (let y = 44; y < 50; y++) for (let xx = x - 6; xx < x + 6; xx++) if (Math.hypot(xx + .5 - x, y + .5 - 43.5) <= 5.5) P.set(xx, y, '#8b8aa3'); P.ell(x, 43.5, 2.6, 2.6, INK); P.ell(x, 43.5, 1.3, 1.3, '#ffd166'); });
     return P.url();
   }
 

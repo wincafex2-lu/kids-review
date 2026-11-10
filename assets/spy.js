@@ -184,6 +184,8 @@ IMG.boom = (() => {
   }
   return c.toDataURL();
 })();
+// 有載到 spy-art.js 就換成乾淨點陣風的新圖（兩倍大、比例相同）
+Object.assign(IMG, window.SPY_ART || {});
 // 太陽與遠方城市
 $('#sun').src = (() => { const m = []; for (let y = 0; y < 12; y++) { let r = ''; for (let x = 0; x < 12; x++) { const d = Math.hypot(x - 5.5, y - 5.5); r += d < 4 ? 'Y' : d < 5.6 ? 'O' : '.'; } m.push(r); } return pix(m, { Y: '#ffe27a', O: '#ffc24a' }); })();
 (() => {
