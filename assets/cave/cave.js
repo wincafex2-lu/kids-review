@@ -312,7 +312,7 @@ async function bossTurn(sc, { monster, kid, hp }, opts, ans, kind) {
   // 準備：選項變成砲彈、武器或咒語，飛到主角身上
   const sx = XS[k], from = [sx, 49];
   let shot;
-  if (kind === 'cannon') { shot = el('div', 'shot'); const ball = el('div', 'ball2'); ball.style.setProperty('--c', LANE[k]); shot.append(ball); }
+  if (kind === 'cannon') { shot = el('div', 'shot'); shot.append(ballEl(k)); }
   else if (kind === 'weapon') { const w = pick(WEAPON.filter(w => w.k !== 'wand')); shot = el('div', 'shot'); shot.append(pimg(w.src, w.w * .7, w.h * .7)); shot.dataset.spin = w.k !== 'arrow' ? 1 : ''; }
   else { shot = el('div', 'shot orb'); shot.style.setProperty('--c', LANE[k]); }
   at(shot, from[0], from[1] - 4); sc.append(shot);
