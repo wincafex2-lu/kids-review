@@ -28,5 +28,8 @@ const KR = (() => {
     return units.get(file);
   };
 
-  return { store, wrong, esc, dataUrl, loadIndex, loadUnitFile };
+  // 同一科有不同版本時，資料夾寫成「國語（康軒）」；遊戲判斷題型時用括號前的科目名
+  const baseSubject = name => String(name || '').replace(/[（(][^（）()]*[）)]$/, '');
+
+  return { store, wrong, esc, dataUrl, loadIndex, loadUnitFile, baseSubject };
 })();

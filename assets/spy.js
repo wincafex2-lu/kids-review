@@ -681,9 +681,15 @@ function loadUnit(meta, grade) {
   return unitCache.get(meta.file);
 }
 let INDEX = null;
-const setup = Object.assign({ grade: '', term: '', unit: '', size: 10 }, store.get('kr-spy-setup', {}));
-const fixUnits = grade => (INDEX.grades.find(g => g.name === grade)?.subjects.find(s => s.name === SUBJECT)?.units || []).filter(u => u.cats?.[FIX]);
-const gradesWithFix = () => INDEX.grades.map(g => g.name).filter(g => fixUnits(g).length);
+const setup = Object.assign({ grade: '', subject: '', term: '', unit: '', size: 10 }, store.get('kr-spy-setup', {}));
+// 國語可能有兩個版本（例如「國語」和「國語（康軒）」），各自是一個科目，不混在一起
+const fixSubjects = grade => (INDEX.grades.find(g => g.name === grade)?.subjects || []).filter(s => KR.baseSubject(s.name) === SUBJECT && s.units.some(u => u.cats?.[FIX])).map(s => s.name);
+const fixUnits = (grade, subj = setup.subject) => {
+  const ss = (INDEX.grades.find(g => g.name === grade)?.subjects || []).filter(s => KR.baseSubject(s.name) === SUBJECT);
+  const s = ss.find(x => x.name === subj) || ss.find(x => x.units.some(u => u.cats?.[FIX]));
+  return (s?.units || []).filter(u => u.cats?.[FIX]);
+};
+const gradesWithFix = () => INDEX.grades.map(g => g.name).filter(g => fixSubjects(g).length);
 const inTerm = u => !setup.term || u.term === setup.term;
 const fixCount = units => units.reduce((n, u) => n + (u.cats[FIX] || 0), 0);
 const escH = KR.esc;
@@ -691,6 +697,8 @@ const escH = KR.esc;
 function renderSetup() {
   const grades = gradesWithFix();
   if (!grades.includes(setup.grade)) setup.grade = grades[0];
+  const subjects = fixSubjects(setup.grade);
+  if (!subjects.includes(setup.subject)) setup.subject = subjects[0];
   const all = fixUnits(setup.grade);
   const terms = [...new Set(all.map(u => u.term).filter(Boolean))];
   if (setup.term && !terms.includes(setup.term)) setup.term = '';
@@ -703,6 +711,7 @@ function renderSetup() {
   $('#setupPanel').innerHTML = `
     <h2>選好範圍，開始抓間諜！</h2>
     <div class="field"><span class="lab">年級</span>${seg('grade', grades.map(g => [g, g]), setup.grade)}</div>
+    ${subjects.length > 1 ? `<div class="field"><span class="lab">版本</span>${seg('subject', subjects.map(n => [n, n]), setup.subject)}</div>` : ''}
     ${terms.length > 1 ? `<div class="field"><span class="lab">範圍</span>${seg('term', [['', '全部'], ...terms.map(t => [t, t])], setup.term)}</div>` : ''}
     <div class="field"><label class="lab" for="unitSel">單元</label>
       <select id="unitSel"><option value="">全部單元（${fixCount(units)} 句）</option>${units.map(u => `<option value="${escH(u.file)}" ${u.file === setup.unit ? 'selected' : ''}>${escH(u.title)}（${u.cats[FIX]} 句）</option>`).join('')}</select></div>
@@ -740,7 +749,7 @@ function showSetup() {
 }
 $('#setupPanel').addEventListener('click', e => {
   const b = e.target.closest('[data-set]');
-  if (b) { const k = b.dataset.set; setup[k] = k === 'size' ? Number(b.dataset.v) : b.dataset.v; if (k !== 'unit') setup.unit = k === 'grade' || k === 'term' ? '' : setup.unit; store.set('kr-spy-setup', setup); return renderSetup(); }
+  if (b) { const k = b.dataset.set; setup[k] = k === 'size' ? Number(b.dataset.v) : b.dataset.v; if (k !== 'unit') setup.unit = k === 'grade' || k === 'term' || k === 'subject' ? '' : setup.unit; store.set('kr-spy-setup', setup); return renderSetup(); }
   if (e.target.id === 'go') return begin(false);
   if (e.target.id === 'goWrong') return begin(true);
 });

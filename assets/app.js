@@ -183,7 +183,7 @@ async function drawPool(filter = practice.filter) {
   if (filter !== 'mix') draws = draws.filter(d => d[0].cat === filter);
   return draws;
 }
-const examPlan = () => INDEX.config.exam?.[state.subject] || null;
+const examPlan = () => INDEX.config.exam?.[state.subject] || INDEX.config.exam?.[KR.baseSubject(state.subject)] || null;
 async function startRound(kind = 'normal') {
   confirmClear = false;
   let draws;

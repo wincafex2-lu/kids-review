@@ -113,9 +113,12 @@ function loadUnit(meta, grade, subject) {
 let INDEX = null;
 let sel = Object.assign({ grade: '', term: '', subject: '全部', unit: '', per: 2 }, store.get('kr-cave-setup', {}));
 const SUBJECTS = ['國語', '數學', '自然', '社會'];
+// 這個年級有的科目（含「國語（康軒）」這種不同版本），依 SUBJECTS 排序
+const gradeSubjects = () => { const g = INDEX.grades.find(g => g.name === sel.grade); if (!g) return SUBJECTS;
+  return g.subjects.map(s => s.name).filter(n => SUBJECTS.includes(KR.baseSubject(n))).sort((a, b) => SUBJECTS.indexOf(KR.baseSubject(a)) - SUBJECTS.indexOf(KR.baseSubject(b))); };
 const unitsOf = () => {
   const g = INDEX.grades.find(g => g.name === sel.grade); if (!g) return [];
-  return g.subjects.filter(s => SUBJECTS.includes(s.name) && (sel.subject === '全部' || s.name === sel.subject))
+  return g.subjects.filter(s => SUBJECTS.includes(KR.baseSubject(s.name)) && (sel.subject === '全部' || s.name === sel.subject))
     .flatMap(s => s.units.map(u => ({ meta: u, subject: s.name }))).filter(x => !sel.term || x.meta.term === sel.term);
 };
 let POOLQ = [], loadTok = 0;
@@ -441,6 +444,7 @@ async function renderSetup() {
   if (!grades.includes(sel.grade)) sel.grade = grades[0];
   const terms = [...new Set(INDEX.grades.find(g => g.name === sel.grade).subjects.flatMap(s => s.units.map(u => u.term)).filter(Boolean))];
   if (sel.term && !terms.includes(sel.term)) sel.term = '';
+  if (sel.subject !== '全部' && !gradeSubjects().includes(sel.subject)) sel.subject = '全部';
   const units = unitsOf();
   if (sel.unit && !units.some(x => x.meta.file === sel.unit)) sel.unit = '';
   store.set('kr-cave-setup', sel);
@@ -450,7 +454,7 @@ async function renderSetup() {
     <p class="small">每關答對一題得到一顆寶石；寶石越多，打魔王越痛。魔王戰答對才打得中，答錯會被反擊扣愛心。</p>
     ${chips('grade', pair(grades), '年級')}
     ${terms.length > 1 ? chips('term', [['', '全部'], ...pair(terms)], '範圍') : ''}
-    ${chips('subject', pair(['全部', ...SUBJECTS]), '科目')}
+    ${chips('subject', pair(['全部', ...gradeSubjects()]), '科目')}
     <div class="row"><label class="lab" for="unitSel">單元</label><select id="unitSel"><option value="">全部單元</option>${units.map(x => `<option value="${esc(x.meta.file)}" ${x.meta.file === sel.unit ? 'selected' : ''}>${sel.subject === '全部' ? x.subject + '・' : ''}${esc(x.meta.title)}</option>`).join('')}</select></div>
     ${chips('per', [[2, '每關 2 題'], [3, '每關 3 題']], '關卡')}
     <p class="small" id="avail">題目讀取中…</p>

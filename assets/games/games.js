@@ -33,7 +33,7 @@ function loadUnit(meta, grade, subject) {
   if (!unitCache.has(meta.file)) unitCache.set(meta.file, KR.loadUnitFile(meta.file).then(d => {
     const u = `${grade} ${meta.title}`, out = [];
     (d.questions || []).forEach((x, i) => {
-      const key = `${meta.file}#${i}`, base = { key, s: subject, u, c: x.cat || DEF_CAT[x.type], w: x.why || '', unit: meta.file };
+      const key = `${meta.file}#${i}`, base = { key, s: KR.baseSubject(subject), sn: subject, u, c: x.cat || DEF_CAT[x.type], w: x.why || '', unit: meta.file };
       if (x.type === 'tf') out.push({ ...base, k: 'tf', q: x.q, a: !!x.answer, p: x.context || '' });
       else if (x.type === 'mc' && (x.options || []).length >= 2) out.push({ ...base, k: 'mc', q: x.q, o: x.options, a: x.answer, p: x.context || '' });
       else if (x.type === 'group' && (x.items || []).length) out.push({ ...base, k: 'group', p: x.passage, items: x.items.map((it, j) => it.type === 'tf'
@@ -47,9 +47,12 @@ function loadUnit(meta, grade, subject) {
 let INDEX = null;
 let sel = Object.assign({ grade: '', term: '', subject: '全部', unit: '', cat: '全部', n: 10, game: '隨機' }, store.get('kr-reveal-setup', {}));
 const SUBJECTS = ['國語', '數學', '自然', '社會'];
+// 這個年級有的科目（含「國語（康軒）」這種不同版本），依 SUBJECTS 排序
+const gradeSubjects = () => { const g = INDEX.grades.find(g => g.name === sel.grade); if (!g) return SUBJECTS;
+  return g.subjects.map(s => s.name).filter(n => SUBJECTS.includes(KR.baseSubject(n))).sort((a, b) => SUBJECTS.indexOf(KR.baseSubject(a)) - SUBJECTS.indexOf(KR.baseSubject(b))); };
 const unitsOf = () => {
   const g = INDEX.grades.find(g => g.name === sel.grade); if (!g) return [];
-  return g.subjects.filter(s => SUBJECTS.includes(s.name) && (sel.subject === '全部' || s.name === sel.subject))
+  return g.subjects.filter(s => SUBJECTS.includes(KR.baseSubject(s.name)) && (sel.subject === '全部' || s.name === sel.subject))
     .flatMap(s => s.units.map(u => ({ meta: u, subject: s.name }))).filter(x => !sel.term || x.meta.term === sel.term);
 };
 let run = null;
@@ -75,7 +78,7 @@ function showSetup() {
 function gameNote(g, n, unitWord) {
   if (g.fits) return `指定「${g.name}」：只出國語的同音字、形近字、字音／多音、選詞填句（四個短選項的題目），共 ${n} ${unitWord}。`;
   const kind = { tf: '是非題', mc: '選擇題', group: '題組' }[KIND_OF(g)], subj = ((BEST[g.id] || '').match(/國語|數學|自然|社會/) || [])[0];
-  const hint = KIND_OF(g) === 'mc' && subj && sel.subject !== subj ? `（這個遊戲最適合${BEST[g.id]}的題目，只想練${subj}就把科目選「${subj}」）` : '';
+  const hint = KIND_OF(g) === 'mc' && subj && KR.baseSubject(sel.subject) !== subj ? `（這個遊戲最適合${BEST[g.id]}的題目，只想練${subj}就把科目選「${subj}」）` : '';
   return `指定「${g.name}」：會出這個範圍${sel.subject === '全部' ? '所有科目' : sel.subject}的${kind}，共 ${n} ${unitWord}${hint}。`;
 }
 async function renderSetup() {
@@ -84,6 +87,7 @@ async function renderSetup() {
   if (!grades.includes(sel.grade)) sel.grade = grades[0];
   const terms = [...new Set(INDEX.grades.find(g => g.name === sel.grade).subjects.flatMap(s => s.units.map(u => u.term)).filter(Boolean))];
   if (sel.term && !terms.includes(sel.term)) sel.term = '';
+  if (sel.subject !== '全部' && !gradeSubjects().includes(sel.subject)) sel.subject = '全部';
   const units = unitsOf();
   if (sel.unit && !units.some(x => x.meta.file === sel.unit)) sel.unit = '';
   store.set('kr-reveal-setup', sel);
@@ -93,7 +97,7 @@ async function renderSetup() {
     <p class="small">想闖關打魔王？到 <a href="cave.html">⛏️ 洞穴大冒險</a>。想練改錯字？到 <a href="spy.html">🕵️ 找出間諜</a>。</p>
     ${chips('grade', pair(grades), '年級')}
     ${terms.length > 1 ? chips('term', [['', '全部'], ...pair(terms)], '範圍') : ''}
-    ${chips('subject', pair(['全部', ...SUBJECTS]), '科目')}
+    ${chips('subject', pair(['全部', ...gradeSubjects()]), '科目')}
     <div class="row"><label class="lab" for="unitSel">單元</label><select id="unitSel"><option value="">全部單元</option>${units.map(x => `<option value="${esc(x.meta.file)}" ${x.meta.file === sel.unit ? 'selected' : ''}>${sel.subject === '全部' ? x.subject + '・' : ''}${esc(x.meta.title)}</option>`).join('')}</select></div>
     ${chips('cat', pair(Object.keys(KINDS)), '題型')}
     ${chips('n', [[5, '5 題'], [10, '10 題'], [20, '20 題']], '題數')}
@@ -136,7 +140,7 @@ function start(onlyWrong) {
 const KLAB = { tf: '是非', mc: '選擇', group: '題組' };
 function showQ(g, q, text, passage) {
   $('#qcard').hidden = false;
-  $('#gname').textContent = g.name; $('#qsrc').textContent = `${q.s}${q.c || KLAB[q.k]}・${q.u}`;
+  $('#gname').textContent = g.name; $('#qsrc').textContent = `${q.sn || q.s}${q.c || KLAB[q.k]}・${q.u}`;
   $('#qpass').hidden = !passage; if (passage) $('#qpass').textContent = passage;
   $('#qtext').textContent = text; $('#qhow').textContent = g.how;
   fit();
