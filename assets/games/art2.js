@@ -89,23 +89,16 @@
     for (let x = 104; x < 326; x += 7 + (P.R() * 7 | 0)) pine(x, 104, 14 + (P.R() * 12 | 0), '#152a3c', '#2d5560');
     for (let x = 110; x < 326; x += 9 + (P.R() * 9 | 0)) pine(x, 108, 10 + (P.R() * 8 | 0), '#0f1f2e', '#22424e');
     for (let x = 0; x < 26; x += 8) pine(x, 108, 16 + (P.R() * 8 | 0), '#0f1f2e', '#22424e');
-    // 草原（月光下，遠的偏藍、近的深）
-    const grass = ['#3d7f6a', '#3f8a5e', '#45964f', '#429048', '#377f42', '#2c6c3c', '#235934', '#1c482e'];
-    P.grad(0, 106, 320, 94, grass, (u, v) => v * .92 + (P.R() - .5) * .1);
-    // 月光灑在草地上
-    for (let y = 108; y < 150; y++) for (let x = 60; x < 220; x++) { const k = ((x - 140) / 80) ** 2 + ((y - 118) / 30) ** 2; if (k < 1) P.veil(x, y, '#7fc48a', (1 - k) * .4); }
-    // 泥土小路：從城門彎到前景
-    for (let y = 106; y < 200; y++) { const v = (y - 106) / 94, cx = 62 + 78 * Math.pow(v, 1.25) + 12 * Math.sin(v * 5.2), half = 3 + 24 * v; for (let x = Math.round(cx - half - P.R() * 2); x < cx + half + P.R() * 2; x++) { const e = Math.abs(x - cx) / half; P.set(x, y, P.pick(['#5a463e', '#7a6250', '#917860', '#a88e70'], .62 - e * .5 + (P.R() - .5) * .3, x, y)); } }
-    for (let i = 0; i < 46; i++) { const v = P.R(), y = 108 + v * 90, cx = 62 + 78 * Math.pow(v, 1.25) + 12 * Math.sin(v * 5.2), x = cx + (P.R() - .5) * (4 + 40 * v); P.rect(x, y, 2 + v * 2, 1, '#c2aa88'); P.rect(x, y + 1, 2 + v * 2, 1, '#4a3a34'); }
-    // 草叢、小花、螢火蟲
-    for (let i = 0; i < 420; i++) { const v = P.R(), x = P.R() * 320 | 0, y = 110 + v * 88 | 0, hi = v > .5 ? '#5fae58' : '#6fbe7a', lo = v > .5 ? '#174028' : '#2c6c4c'; P.set(x, y, lo); P.set(x, y - 1, hi); if (v > .35) { P.set(x - 1, y - 2, hi); P.set(x + 1, y - 2, hi); P.set(x, y - 2, lo); } }
-    for (let i = 0; i < 40; i++) { const x = P.R() * 320 | 0, y = 114 + P.R() * 80 | 0, c = ['#ffd166', '#ff8fb1', '#fffaf0', '#b9d8ff'][i % 4]; P.set(x, y, c); P.set(x - 1, y + 1, c); P.set(x + 1, y + 1, c); P.set(x, y + 1, '#fff3c4'); P.set(x, y + 2, '#2c6c3c'); }
-    for (let i = 0; i < 14; i++) { const x = 10 + P.R() * 300 | 0, y = 96 + P.R() * 70 | 0; P.veil(x - 1, y, '#c8e86a', .5); P.veil(x + 1, y, '#c8e86a', .5); P.veil(x, y - 1, '#c8e86a', .5); P.veil(x, y + 1, '#c8e86a', .5); P.set(x, y, '#f4ffb0'); }
-    // 大石頭
-    const rock = (x, y, rx, ry) => { P.ell(x + 1, y + ry - 1, rx + 2, 2.4, '#1c482e'); P.ball(x, y, rx, ry, ['#3a3558', '#56507a', '#7a759c', '#a7a4c4', '#cfcde6'], .5, -.7, true); P.rect(x - rx + 1, y + ry - 1, rx * 2 - 2, 1, '#2c2846'); P.set(x - 2, y + 1, '#3a3558'); P.set(x - 1, y + 2, '#3a3558'); };
-    rock(196, 122, 7, 5); rock(292, 150, 10, 7); rock(22, 140, 8, 6); rock(246, 186, 6, 4); rock(170, 168, 4, 3);
-    // 前景深色草
-    for (let x = 0; x < 320; x++) { const hh = 3 + (Math.sin(x * .7) + Math.sin(x * 1.9 + 2)) * 1.6 + P.R() * 3; for (let y = 200 - hh; y < 200; y++) P.set(x, y, y - (200 - hh) < 1 ? '#2c6c3c' : '#12301f'); }
+    // 草原：選項和角色站的地方保持乾淨，只用三層平塗；細節都留在地平線附近
+    P.rect(0, 106, 320, 94, '#2f7446');
+    P.grad(0, 106, 320, 16, ['#4a9a62', '#3d8854', '#2f7446'], (u, v) => v);
+    P.grad(0, 184, 320, 16, ['#2f7446', '#28663e'], (u, v) => v);
+    // 城門前一小段泥土路，很快就淡掉
+    for (let y = 106; y < 122; y++) { const v = (y - 106) / 16, cx = 62 + 10 * v, half = 4 + 5 * v; for (let x = Math.round(cx - half); x < cx + half; x++) P.veil(x, y, v < .5 ? '#8a7460' : '#6f6a52', 1 - v * v); }
+    // 地平線上的小草叢和兩顆石頭（都在選項上方很遠的地方）
+    for (let x = 4; x < 320; x += 9 + (P.R() * 10 | 0)) { const y = 107 + (P.R() * 4 | 0); P.set(x, y, '#5fb070'); P.set(x - 1, y - 1, '#5fb070'); P.set(x + 1, y - 1, '#5fb070'); }
+    const rock = (x, y, rx, ry) => { P.ball(x, y, rx, ry, ['#3a3558', '#56507a', '#7a759c', '#a7a4c4'], .5, -.7, false); P.rect(x - rx + 1, y + ry - 1, rx * 2 - 2, 1, '#245a38'); };
+    rock(176, 112, 5, 3.5); rock(8, 114, 6, 4);
     return P.url();
   }
 
@@ -125,11 +118,9 @@
     // 前牆廣告看板
     P.rect(0, 33, 320, 7, '#fffaf0'); P.rect(0, 33, 320, 1, '#ffffff'); P.rect(0, 39, 320, 1, '#b9b6d8');
     for (let x = 4, i = 0; x < 320; x += 40, i++) { const c = ['#2f9e5b', '#ffd166', '#3c8dde', '#e8414f', '#b48cff'][i % 5]; P.rect(x, 34, 32, 5, c); P.rect(x, 34, 32, 1, mix(c, '#ffffff', .35)); P.rect(x + 4, 36, 10, 1, '#fffaf0'); P.rect(x + 17, 36, 4, 1, '#fffaf0'); P.rect(x + 24, 36, 5, 1, '#fffaf0'); }
-    // 草地賽道：一格一格割草紋
-    for (let y = 40; y < 186; y++) for (let x = 0; x < 320; x++) { const band = ((x + (y >> 1)) >> 5) % 2, n = P.R(); P.set(x, y, n < .06 ? (band ? '#3f9a44' : '#4aa84a') : n > .95 ? (band ? '#72cc66' : '#84d870') : (band ? '#56b552' : '#64c25a')); }
-    P.grad(0, 40, 320, 5, ['#2c7a3a', '#3f9a44', null].filter(Boolean), (u, v) => v);
-    for (let i = 0; i < 260; i++) { const x = P.R() * 320 | 0, y = 46 + P.R() * 138 | 0; P.set(x, y, '#2f8a3c'); P.set(x, y - 1, '#8fe07a'); P.set(x + 1, y - 2, '#8fe07a'); }
-    for (let i = 0; i < 26; i++) { const x = P.R() * 320 | 0, y = 48 + P.R() * 134 | 0; P.rect(x, y, 3, 1, '#8a6a3a'); P.rect(x + 1, y - 1, 2, 1, '#a88450'); }
+    // 草地賽道：平塗的寬條割草紋，不加雜點，選項牌和馬才清楚
+    for (let y = 40; y < 186; y++) for (let x = 0; x < 320; x++) P.set(x, y, (x >> 5) % 2 ? '#5cba56' : '#63c05b');
+    P.rect(0, 40, 320, 2, '#3f9a44'); P.rect(0, 42, 320, 1, '#4fae4c');
     // 內圈：白欄杆＋花圃
     P.grad(0, 186, 320, 14, ['#2f8a3c', '#267334', '#1c5c2c']);
     for (let x = 0; x < 320; x += 9) { const r = 4 + (P.R() * 2 | 0); P.ball(x + 4, 196, r + 1, r, ['#174a26', '#1f6630', '#2f8a3c', '#4aa84a'], -.4, -.8, true); }
@@ -238,6 +229,46 @@
     { m: '#3b8fd6', wing: '#7a5be0', b: '#e6f2f0', h: '#ffd978', r: '#a81f3c', c: '#ffb3cf', eye: '#ffe066' },
   ];
 
+  /* ================= 怪獸二號：原版那隻傻呼呼的圓怪獸，放大重畫（面向左）96×84 ================= */
+  function goofy(pal) {
+    const W = 96, H = 84, P = Cv(W, H);
+    const B = rampOf(pal.m), BE = rampOf(pal.b, pal.m, '#ffffff'), HN = rampOf(pal.h, '#6a5a70', '#ffffff'), FT = rampOf(mix(pal.m, '#120c2a', .25));
+    const part = (fn, ramp, o) => { const M = Mask(W, H); fn(M); return paint(P, M, ramp, o); };
+    const BIG = { d1: 2, d2: 7, h1: 4 }, MID = { d1: 1, d2: 4, h1: 2 }, SM = { d1: 1, d2: 2, h1: 1 };
+    // 鹿角一樣的小角
+    part(M => M.poly([[19, 20], [13, 2], [19, 3], [23, 12], [26, 5], [31, 7], [30, 20]]), HN, SM);
+    part(M => M.poly([[77, 20], [83, 2], [77, 3], [73, 12], [70, 5], [65, 7], [66, 20]]), HN, SM);
+    // 小尾巴、腳
+    part(M => M.poly([[82, 54], [95, 50], [94, 61], [84, 66]]), B, MID);
+    [[24, 79, 10], [50, 80, 10], [74, 79, 9]].forEach(([x, y, r]) => part(M => M.ell(x, y, r, 4.5), FT, MID));
+    // 圓滾滾的身體
+    part(M => M.ell(48, 46, 37, 33).ell(48, 60, 40, 21), B, BIG);
+    P.ell(22, 24, 5, 2.5, B[3]); P.ell(30, 20, 2, 1.2, B[3]);
+    [[70, 26], [76, 34], [66, 33], [80, 44]].forEach(([x, y]) => { P.ell(x, y, 2, 1.5, B[1]); });
+    // 肚子
+    part(M => M.ell(60, 63, 17, 13), BE, MID);
+    // 短短的手
+    part(M => M.ell(7, 63, 6.5, 8), B, MID); [[2, 67], [5, 70], [9, 71]].forEach(([x, y]) => P.rect(x, y, 2, 2, '#fffdf2'));
+    // 大眼睛：粗框、鬥雞眼
+    [[27, 35, 3, 3], [51, 35, -3, 3]].forEach(([x, y, dx, dy]) => { P.ell(x, y, 12, 12, INK); P.ell(x, y, 9.6, 9.6, '#ffffff'); P.ell(x + 1.5, y + 3, 8, 6, '#e9e6f4'); P.ell(x - .5, y - 1, 9, 7.5, '#ffffff'); P.ell(x + dx, y + dy, 4, 4, INK); P.rect(x + dx - 2, y + dy - 3, 2, 2, '#ffffff'); });
+    P.rect(37, 33, 5, 3, INK);
+    // 腮紅
+    P.ell(10, 47, 4.5, 3, pal.c); P.ell(69, 49, 4.5, 3, pal.c);
+    // 嘴巴：開開的、兩顆大門牙
+    const mouth = Mask(W, H); mouth.rect(12, 52, 26, 10).ell(14, 57, 4, 5).ell(36, 57, 4, 5);
+    for (let y = 50; y < 66; y++) for (let x = 6; x < 44; x++) if (!mouth.get(x, y) && (mouth.get(x - 1, y) || mouth.get(x + 1, y) || mouth.get(x, y - 1) || mouth.get(x, y + 1) || mouth.get(x - 1, y - 1) || mouth.get(x + 1, y + 1) || mouth.get(x - 1, y + 1) || mouth.get(x + 1, y - 1))) P.set(x, y, INK);
+    for (let y = 50; y < 66; y++) for (let x = 6; x < 44; x++) if (mouth.get(x, y)) P.set(x, y, y > 58 ? mix(pal.r, '#ff9aa6', .55) : pal.r);
+    [[15, 52], [30, 52]].forEach(([x, y]) => { P.rect(x, y, 5, 5, '#fffdf2'); P.rect(x + 4, y, 1, 5, '#cfc8b0'); P.rect(x, y + 4, 5, 1, '#cfc8b0'); });
+    P.outline();
+    return P.url();
+  }
+  const GOOFYPAL = [
+    { m: '#ef6b4a', b: '#ffe0b8', h: '#f6f3fa', r: '#7a1730', c: '#ffc49a' },
+    { m: '#8a63e8', b: '#e6d7ff', h: '#fff3c4', r: '#a81f3c', c: '#ff8fb1' },
+    { m: '#4fb36b', b: '#e2f7c8', h: '#ffe8a3', r: '#a81f3c', c: '#ffb3a0' },
+    { m: '#3f9bd8', b: '#d9f1ff', h: '#ffd166', r: '#a81f3c', c: '#ffb3cf' },
+  ];
+
   /* ================= 武器（都指向右邊）、砲彈、大砲 ================= */
   const STEEL = ['#4a5068', '#8a93a8', '#c5ccda', '#f4f7fb'], GOLD = ['#8a5a10', '#d49a1e', '#ffd166', '#fff3c4'], WOOD = ['#3a2416', '#6e4526', '#9a6a3f', '#c99560'], IRON = ['#16142a', '#35324e', '#5d5a77', '#9a97b8'];
   function sprite(w, h, fn) { const P = Cv(w, h); const part = (f, ramp, o) => { const M = Mask(w, h); f(M); return paint(P, M, ramp, o); }; fn(P, part); P.outline(); return { src: P.url(), w: w / 2.7, h: h / 2.7 }; }
@@ -343,7 +374,7 @@
   ART.BG.race = bgRace();
   ART.HD = {
     Cv, Mask, paint, mix, rampOf,
-    mon: MONPAL.map(monster),
+    mon: [...MONPAL.map(monster), ...GOOFYPAL.map(goofy)], // 前四隻小飛龍（第 0 隻是洞穴魔王）、後四隻傻呼呼圓怪獸
     horse: LANES.map((c, i) => [0, 1].map(f => horse(COATS[i][0], COATS[i][1], c, f))),
     weapon: weapons, cannon: cannon.src, balls: LANES.map(shell),
   };
