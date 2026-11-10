@@ -614,7 +614,6 @@ function pixShaded(rows, pal, skip) {
     for (let x = 0; x < 160; x += 20) { const hh = 10 + ((x * 7) % 8), c = ['#e8b3a0', '#f2d08a', '#b9d6c0', '#c7b8e8'][(x / 20) % 4]; P.rect(x + 2, 12 - hh + 8, 16, hh, '#1d1b2e'); P.rect(x + 3, 13 - hh + 8, 14, hh - 1, c); for (let y = 15 - hh + 8; y < 18; y += 4) { P.rect(x + 5, y, 3, 2, '#5d5a77'); P.rect(x + 11, y, 3, 2, '#5d5a77'); } }
     P.rect(0, 20, 160, 3, '#d3d1e6'); P.rect(0, 20, 160, 1, '#ffffff'); for (let x = 0; x < 160; x += 8) P.rect(x, 21, 1, 2, '#a7a4c4');
     P.rect(0, 23, 160, 17, '#4a4458'); for (let x = 0; x < 160; x += 16) P.rect(x + 2, 31, 8, 1, '#ffd166');
-    for (let i = 0; i < 120; i++) P.dot(P.R() * 160, 24 + P.R() * 16, '#3f3a4d');
   }, 82);
   SP.truck = canvas(48, 26, P => {
     P.rect(0, 2, 32, 19, '#1d1b2e'); P.rect(1, 3, 30, 17, '#fffaf0'); P.rect(1, 3, 30, 1, '#ffffff'); P.rect(1, 18, 30, 2, '#d9d3e6');

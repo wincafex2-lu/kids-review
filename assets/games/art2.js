@@ -44,6 +44,7 @@
       path(pts, col, th) { for (let i = 1; i < pts.length; i++) P.line(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], col, th); },
       // 幫整張圖描一圈外框
       outline(col = INK, th = 1) { if (th > 1) P.outline(col, th - 1); const add = []; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (!P.has(x, y) && (P.has(x - 1, y) || P.has(x + 1, y) || P.has(x, y - 1) || P.has(x, y + 1))) add.push([x, y]); add.forEach(([x, y]) => P.set(x, y, col)); },
+      clear(x, y, ww, hh) { for (let yy = y; yy < y + hh; yy++) for (let xx = x; xx < x + ww; xx++) d[(yy * w + xx) * 4 + 3] = 0; },
       url() { g.putImageData(im, 0, 0); return c.toDataURL(); },
     };
     return P;
@@ -543,7 +544,7 @@
     { let j = 0; for (let x = 0; x < 320; x++) { j += (P.R() - .5) * 1.6; j = Math.max(-2, Math.min(2, j)); const top = Math.round(60 - 9 * (.5 + .5 * Math.sin(x * .03 + 1)) * (.5 + .5 * Math.sin(x * .011)) + j); for (let y = top; y < 60; y++) P.set(x, y, y - top < 1 ? '#c98aa0' : '#a8648a'); } }
     // 海：幾層平塗，交界只有一小條抖色
     const sea = ['#3f97d0', '#3385c2', '#2a74b2', '#2364a2', '#1e5592', '#1a4782'], ys = [60, 70, 86, 108, 136, 168, 200];
-    sea.forEach((c, i) => { P.rect(0, ys[i], 320, ys[i + 1] - ys[i], c); if (i) for (let x = 0; x < 320; x += 2) P.set(x + (i % 2), ys[i], sea[i - 1]); });
+    sea.forEach((c, i) => { P.rect(0, ys[i], 320, ys[i + 1] - ys[i], c); });
     P.rect(0, 60, 320, 1, '#9ad0f0');
     // 夕陽倒影（只在遠處海面）
     for (let y = 62; y < 96; y += 3) { const w = 26 - (y - 62) * .6; P.rect(264 - w / 2 + Math.sin(y) * 3, y, w, 1, y < 76 ? '#ffe0a8' : '#ffc894'); }
@@ -664,7 +665,7 @@
     ridge(100, 36, 1.2, '#d0907e', '#e8ae96'); ridge(110, 24, 3.9, '#a8687a', '#c48290');
     // 峽谷深處：平塗三層
     P.rect(0, 112, 320, 24, '#6a4862'); P.rect(0, 136, 320, 20, '#553a56'); P.rect(0, 156, 320, 16, '#40294a');
-    for (let x = 0; x < 320; x += 2) { P.set(x, 136, '#6a4862'); P.set(x + 1, 156, '#553a56'); }
+   
     // 河
     P.rect(0, 172, 320, 28, '#2b7bb9'); P.rect(0, 172, 320, 2, '#a8dcf6'); P.rect(0, 174, 320, 1, '#5aa6dc');
     for (let y = 179; y < 200; y += 6) for (let x = ((y / 6) % 2) * 14 + 66; x < 256; x += 30) { P.rect(x, y, 9, 1, '#78c3f0'); P.rect(x + 2, y + 1, 5, 1, '#4f9fd6'); }
@@ -741,7 +742,7 @@
     let j = 0; for (let x = 0; x < 320; x++) { j += (P.R() - .5) * 2; j = Math.max(-3, Math.min(3, j)); const top = Math.round(92 - 30 * (.5 + .5 * Math.sin(x * .022 + 1)) * (.6 + .4 * Math.sin(x * .058)) + j); for (let y = top; y < 112; y++) P.set(x, y, y - top < 2 ? '#a6d6b0' : '#8cc69a'); }
     j = 0; for (let x = 0; x < 320; x++) { j += (P.R() - .5) * 2; j = Math.max(-3, Math.min(3, j)); const top = Math.round(100 - 12 * (.5 + .5 * Math.sin(x * .03 + 4)) + j); for (let y = top; y < 112; y++) P.set(x, y, y - top < 2 ? '#8fd07a' : '#74bf66'); }
     // 草原：平塗兩層
-    P.rect(0, 108, 320, 92, '#7cc56a'); P.rect(0, 108, 320, 14, '#86cc72'); for (let x = 0; x < 320; x += 2) P.set(x, 122, '#86cc72');
+    P.rect(0, 108, 320, 92, '#7cc56a'); P.rect(0, 108, 320, 14, '#86cc72');
     // 遠方的樹和小屋（在側線上面）
     const tree = (x, y, r) => { P.rect(x - 1, y - 3, 2, 4, '#6e4a2a'); P.ball(x, y - 3 - r, r, r, ['#2f7a3a', '#3e8f3a', '#5aa63c', '#8fd07a'], -.5, -.7, false); };
     tree(30, 96, 5); tree(42, 97, 4); tree(214, 96, 5); tree(300, 95, 6);
@@ -903,6 +904,56 @@
     return P.url();
   }
 
+  /* ================= 火車：乾淨點陣風（粗黑框、每個零件三階明暗）。尺寸是舊圖兩倍，輪子底部在最後一列 ================= */
+  // 有黑框的方塊：上面一條亮、下面一條暗
+  const box = (P, x, y, w, h, c, lt, dk, hi = Math.max(2, Math.round((h - 4) * .22)), lo = Math.max(2, Math.round((h - 4) * .25))) => { P.rect(x, y, w, h, INK); P.rect(x + 2, y + 2, w - 4, h - 4, c); if (lt) P.rect(x + 2, y + 2, w - 4, hi, lt); if (dk) P.rect(x + 2, y + h - 2 - lo, w - 4, lo, dk); };
+  // 輪子：黑框、鐵圈、紅色輪面、十字輪輻、金色軸心
+  const wheel = (P, cx, cy, r, face, dark, spokes = true) => {
+    P.ell(cx, cy, r, r, INK); P.ell(cx, cy, r - 2, r - 2, '#d3d1e6');
+    for (let y = Math.floor(cy); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) { const d = Math.hypot(x + .5 - cx, y + .5 - cy); if (d <= r - 2 && d > r - 4 && y + .5 > cy + 1) P.set(x, y, '#8b8aa3'); }
+    P.ell(cx, cy, r - 4, r - 4, INK); P.ell(cx, cy, r - 5, r - 5, dark);
+    if (spokes) { const k = (r - 5) * .7; P.line(cx - k, cy - k, cx + k - 1, cy + k - 1, face, 2.4); P.line(cx + k - 1, cy - k, cx - k, cy + k - 1, face, 2.4); P.rect(cx - 1, cy - r + 5, 2, (r - 5) * 2, face); P.rect(cx - r + 5, cy - 1, (r - 5) * 2, 2, face); } else P.ell(cx, cy, r - 5, r - 5, face);
+    P.ell(cx, cy, 2.6, 2.6, INK); P.ell(cx, cy, 1.6, 1.6, '#ffd166');
+  };
+  function spLoco() {
+    const P = Cv(112, 68);
+    // 底盤、連結器、排障器
+    P.rect(2, 44, 104, 7, INK); P.rect(4, 46, 100, 3, '#3a3550'); P.rect(0, 44, 4, 6, INK);
+    P.poly([[100, 48], [112, 62], [112, 66], [100, 66]], INK); P.poly([[102, 51], [110, 62], [110, 64], [102, 64]], '#8b8aa3'); [54, 58, 62].forEach(y => P.rect(102, y, 8, 1, INK));
+    // 鍋爐（紅）、金箍
+    box(P, 36, 22, 62, 26, '#e8414f', '#ff8a8a', '#a12a3c', 4, 6);
+    [48, 64, 80].forEach(x => { P.rect(x, 22, 6, 26, INK); P.rect(x + 2, 24, 2, 22, '#ffd166'); P.rect(x + 2, 24, 2, 4, '#fff3c4'); P.rect(x + 2, 40, 2, 6, '#c98a00'); });
+    // 煙箱和車頭燈
+    box(P, 94, 20, 12, 28, '#3a3550', '#6b6890', '#231f38', 4, 6);
+    box(P, 102, 24, 10, 10, '#ffd166', '#fff3c4', '#f2b632', 2, 2);
+    // 蒸汽圓頂、煙囪
+    P.ell(66, 20, 9, 9, INK); P.rect(57, 20, 18, 4, INK); P.ell(66, 20, 7, 7, '#ffd166'); P.ell(64, 17, 3, 2, '#fff3c4'); P.rect(59, 20, 14, 2, '#c98a00'); P.rect(64, 8, 4, 4, INK);
+    box(P, 82, 6, 12, 18, '#3a3550', null, null); P.rect(84, 8, 3, 14, '#6b6890'); P.rect(90, 8, 2, 14, '#231f38');
+    box(P, 78, 0, 20, 8, '#5d5a77', '#8b8aa3', null, 2);
+    // 駕駛室（藍）、屋頂、車窗
+    box(P, 0, 6, 40, 42, '#3c8dde', '#78c3f0', '#2a6cb4', 4, 6); P.rect(34, 10, 4, 30, '#2a6cb4');
+    box(P, 0, 2, 44, 8, '#5d5a77', '#a7a4c4', null, 2);
+    P.rect(6, 12, 24, 20, INK);
+    box(P, 8, 34, 20, 6, '#ffd166', '#fff3c4', null, 1);
+    // 輪子和連桿
+    wheel(P, 17, 58, 9, '#e8414f', '#8a2034', false);
+    [43, 67, 91].forEach(x => wheel(P, x, 56, 11, '#e8414f', '#8a2034'));
+    P.rect(39, 58, 56, 6, INK); P.rect(41, 60, 52, 2, '#d3d1e6'); P.rect(41, 60, 52, 1, '#ffffff');
+    [43, 67, 91].forEach(x => { P.ell(x, 61, 3.4, 3.4, INK); P.ell(x, 61, 2, 2, '#ffd166'); });
+    P.clear(8, 14, 20, 16);
+    return P.url();
+  }
+  function spCar(c) {
+    const P = Cv(76, 52), L = mix(c, '#ffffff', .45), D = mix(c, '#000000', .28);
+    box(P, 2, 0, 72, 8, '#5d5a77', '#a7a4c4', null, 2);
+    box(P, 0, 6, 76, 34, c, L, D, 3, 5);
+    P.rect(2, 26, 72, 4, '#fffaf0'); P.rect(2, 29, 72, 1, '#d9d3c2');
+    for (let x = 6; x < 66; x += 17) { P.rect(x, 10, 14, 14, INK); P.rect(x + 2, 12, 10, 10, '#9fd4f5'); P.rect(x + 2, 12, 10, 3, '#e6f6ff'); P.rect(x + 2, 12, 3, 10, '#e6f6ff'); }
+    P.rect(4, 38, 68, 5, INK); P.rect(6, 40, 64, 1, '#5d5a77'); P.rect(0, 38, 4, 4, INK); P.rect(72, 38, 4, 4, INK);
+    [13, 29, 47, 63].forEach(x => { P.ell(x, 45, 7, 7, INK); P.ell(x, 45, 5, 5, '#a7a4c4'); for (let y = 45; y < 51; y++) for (let xx = x - 6; xx < x + 6; xx++) if (Math.hypot(xx + .5 - x, y + .5 - 45) <= 5 && y > 45) P.set(xx, y, '#6b6890'); P.ell(x, 45, 2.2, 2.2, INK); P.set(x - 1, 44, '#fff3c4'); });
+    return P.url();
+  }
+
   /* ================= 套用：換背景，角色交給 games-core.js（它會先看 ART.HD） ================= */
   const LANES = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b'];
   ART.BG.boss = bgBoss();
@@ -912,6 +963,7 @@
   ART.BG.rocket = bgRocket();
   ART.BG.fish = bgFish();
   ART.BG.ox = bgOx(); ART.BG.vote = bgVote(); ART.BG.detect = bgDetect(); ART.BG.bridge = bgBridge(); ART.BG.vault = bgVault(); ART.BG.sky = bgSky();
+  ART.SP.loco = spLoco(); ART.SP.cars = ['#ffd166', '#2f9e5b', '#b48cff', '#ff9b6b'].map(spCar);
   Object.assign(ART.SP, { safe: spSafe(), dial: spDial(), handle: spHandle(), truck: spTruck(), crate: spCrate(), lockC: spLock(false), lockO: spLock(true), pad: spPad(), tower: spTower(),
     keys: [['#ffd166', '#c98a00'], ['#d3d1e6', '#8b8aa3'], ['#ff9b6b', '#c45a2a'], ['#8fe0a2', '#3e8f3a']].map(([c, d]) => spKey(c, d)) });
   ART.BG.door = bgDoor(); ART.BG.rail = bgRail(); ART.BG.roof = bgRoof(); ART.BG.lab = bgLab();

@@ -15,7 +15,7 @@
       const ci = Math.floor(x / gw) + 1, cj = Math.floor((y - y0) / gh) + 1; let d1 = 1e9, d2 = 1e9, best = null;
       for (let j = cj - 1; j <= cj + 1; j++) for (let i = ci - 1; i <= ci + 1; i++) { if (i < 0 || j < 0 || i >= cols || j >= rows) continue; const sd = seeds[j * cols + i], d = Math.hypot((x - sd[0]) * .8, (y - sd[1]) * 1.25); if (d < d1) { d2 = d1; d1 = d; best = sd; } else if (d < d2) d2 = d; }
       const e = d2 - d1; let c = e < 1.3 ? mix(line, best[2], .3) : e < 3.6 ? (y < best[1] ? mix(best[2], '#ffffff', .12) : mix(best[2], '#000000', .2)) : best[2];
-      if (glow) { const [gc, ga] = glow(x, y); if (ga > .02) { const q = Math.min(5, Math.floor(ga * 10 + ((x + y * 2) & 3) / 4)); if (q > 0) { const k = c + gc + q; c = steps[k] || (steps[k] = mix(c, gc, q * .1)); } } }
+      if (glow && e >= 1.3) { const [gc, ga] = glow(best[0], best[1]), q = Math.min(5, Math.round(ga * 10)); if (q > 0) { const k = c + gc + q; c = steps[k] || (steps[k] = mix(c, gc, q * .1)); } }   // 整顆石頭一起變亮，不用細點混色
       P.set(x, y, c);
     }
   }
@@ -75,7 +75,6 @@
     const P = Cv(320, 200, 61);
     P.grad(0, 0, 320, 112, ['#100d1c', '#151126', '#1b1630', '#221c3b', '#2a2346'], (u, v) => v);
     // 遠處發光的洞窟
-    halo(P, 160, 78, 96, '#2f5a78', .75); halo(P, 160, 84, 46, '#4a8aa0', .6);
     // 遠處石柱（上下連起來）
     [[84, 12], [122, 7], [190, 9], [226, 14]].forEach(([x, w]) => { for (let y = 0; y < 116; y++) { const k = Math.abs(y - 58) / 58, half = w / 2 * (.55 + .45 * k * k); P.rect(Math.round(x - half), y, Math.round(half * 2), 1, '#2a2340'); P.set(Math.round(x - half), y, '#3d3458'); } });
     // 遠處岩稜
@@ -84,7 +83,7 @@
     for (let i = 0; i < 46; i++) P.set(60 + P.R() * 200, 26 + P.R() * 70, P.R() < .5 ? '#78e0f0' : '#b48cff');
     // 峽谷深處：平塗三層
     P.rect(0, 112, 320, 24, '#221c30'); P.rect(0, 136, 320, 20, '#191424'); P.rect(0, 156, 320, 16, '#110d1a');
-    for (let x = 0; x < 320; x += 2) { P.set(x, 136, '#221c30'); P.set(x + 1, 156, '#191424'); }
+   
     // 地底河
     P.rect(0, 172, 320, 28, '#1f7a8a'); P.rect(0, 172, 320, 2, '#a0f0f5'); P.rect(0, 174, 320, 1, '#4fb8c8');
     for (let y = 179; y < 200; y += 6) for (let x = ((y / 6) % 2) * 14 + 66; x < 256; x += 30) { P.rect(x, y, 9, 1, '#5fd0dc'); P.rect(x + 2, y + 1, 5, 1, '#3a9aaa'); }
@@ -117,7 +116,7 @@
     for (let x = 0; x < 320; x += 10) { P.rect(x, 98, 6, 6, '#6e4a2a'); P.rect(x, 98, 6, 1, '#8a5a35'); }
     P.rect(0, 98, 320, 2, '#d3d1e6'); P.rect(0, 100, 320, 1, '#8b8aa3'); P.rect(0, 102, 320, 2, '#a7a4c4');
     // 地面：平塗兩層
-    P.rect(0, 108, 320, 92, '#3a3249'); P.rect(0, 108, 320, 14, '#413850'); for (let x = 0; x < 320; x += 2) P.set(x, 122, '#413850');
+    P.rect(0, 108, 320, 92, '#3a3249'); P.rect(0, 108, 320, 14, '#413850');
     // 主線
     P.rect(0, 160, 320, 8, '#5d5274'); for (let x = 0; x < 320; x += 3) P.set(x + ((x * 7) % 2), 163 + ((x * 5) % 3), '#4b4160');
     for (let x = 0; x < 320; x += 10) { P.rect(x, 158, 6, 12, '#6e4a2a'); P.rect(x, 158, 6, 1, '#9a6a3f'); P.rect(x + 5, 159, 1, 11, '#4e3420'); }
@@ -167,7 +166,7 @@
     [[14, 16, 9], [48, 10, 7], [96, 13, 8], [150, 9, 6], [196, 14, 8]].forEach(([x, l, w]) => mite(P, x, 148, l, w, ['#24162b', '#3a2643', '#5a3a60']));
     crystal(P, 28, 148, 1, '#b48cff', .35); crystal(P, 300, 148, .8, '#e8414f', .35);
     // 地面：平塗三層
-    P.rect(0, 148, 320, 52, '#2a1a31'); P.rect(0, 148, 320, 2, '#5a3a60'); P.rect(0, 150, 320, 12, '#33213b'); for (let x = 0; x < 320; x += 2) P.set(x, 162, '#33213b'); P.rect(0, 186, 320, 14, '#24162b'); for (let x = 0; x < 320; x += 2) P.set(x + 1, 186, '#2a1a31');
+    P.rect(0, 148, 320, 52, '#2a1a31'); P.rect(0, 148, 320, 2, '#5a3a60'); P.rect(0, 150, 320, 12, '#33213b'); P.rect(0, 186, 320, 14, '#24162b');
     return P.url();
   }
 
@@ -267,7 +266,7 @@
     crystal(P, 240, 60, 1, '#78e0f0', 0); crystal(P, 280, 60, .7, '#b48cff', 0); crystal(P, 140, 60, .5, '#8fe0a2', 0);
     // 地底湖：幾層平塗
     const sea = ['#237a8c', '#1e6c7e', '#195e70', '#155162', '#124554', '#0f3a48'], ys = [60, 70, 86, 108, 136, 168, 200];
-    sea.forEach((c, i) => { P.rect(0, ys[i], 320, ys[i + 1] - ys[i], c); if (i) for (let x = 0; x < 320; x += 2) P.set(x + (i % 2), ys[i], sea[i - 1]); });
+    sea.forEach((c, i) => { P.rect(0, ys[i], 320, ys[i + 1] - ys[i], c); });
     P.rect(0, 60, 320, 1, '#8fe8f0');
     // 水晶倒影（只在遠處水面）
     for (let y = 62; y < 92; y += 3) { const w = 16 - (y - 62) * .4; P.rect(243 - w / 2 + Math.sin(y) * 3, y, w, 1, y < 74 ? '#8fe8f0' : '#4fb8c8'); }
