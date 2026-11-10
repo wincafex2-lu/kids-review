@@ -305,7 +305,7 @@
     canvas(32, 20, P => { P.rect(6, 5, 22, 10, '#1d1b2e'); P.rect(7, 6, 20, 8, '#e8414f'); P.rect(7, 6, 20, 1, '#ff9a9a'); P.rect(7, 12, 20, 2, '#a12a3c'); for (let i = 0; i < 4; i++) P.rect(28 + i, 6 + i, 1, 8 - i * 2, '#1d1b2e'); P.rect(1, 7, 6, 6, '#1d1b2e'); P.rect(2, 8, 4, 4, '#5d5a77'); P.circ(18, 9.5, 2, '#1d1b2e'); P.circ(18, 9.5, 1.2, '#9fd4f5'); wheels(P, [8, 20]); }),
   ];
   SP.rideNames = ['礦車', '鑽地車', '吉普車', '火箭推車'];
-  SP.sack = canvas(12, 12, P => draw(P, ['....kk......', '...kwwk.....', '....kk......', '..kkyykk....', '.kyyyyyyk...', 'kyyyyycyyk..', 'kyyycyyyyk..', 'kyyyyyycyk..', 'kyycyyyyyk..', '.kyyyyyyk...', '..kkkkkk....', '............'], { k: '#1d1b2e', w: '#e8414f', y: '#c98a4b', c: '#78e0f0' }));
+  SP.sack = canvas(12, 12, P => draw(P, ['....kk......', '...kwwk.....', '....kk......', '..kkyykk....', '.kyhhyyyk...', 'kyhyyyyydk..', 'kyyyccyydk..', 'kyyyccyydk..', 'kyyyyyyddk..', '.kyddddk....', '..kkkkkk....', '............'], { k: '#1d1b2e', w: '#e8414f', y: '#c98a4b', c: '#78e0f0', h: '#e0a868', d: '#9c6a34' }));
   // 地圖上每個洞室的小圖
   const motif = rows => canvas(rows[0].length, rows.length, P => draw(P, rows, { k: '#1d1b2e', r: '#d6334a', b: '#3c8dde', y: '#ffd166', w: '#d3d1e6', o: '#b8834e', g: '#8b8aa3', t: '#1f7a8a', c: '#78e0f0', p: '#b48cff', n: '#6e4a2a', e: '#e8414f' }));
   SP.motif = {

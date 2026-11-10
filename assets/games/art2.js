@@ -44,12 +44,53 @@
       path(pts, col, th) { for (let i = 1; i < pts.length; i++) P.line(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], col, th); },
       // 幫整張圖描一圈外框
       outline(col = INK, th = 1) { if (th > 1) P.outline(col, th - 1); const add = []; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (!P.has(x, y) && (P.has(x - 1, y) || P.has(x + 1, y) || P.has(x, y - 1) || P.has(x, y + 1))) add.push([x, y]); add.forEach(([x, y]) => P.set(x, y, col)); },
-      clear(x, y, ww, hh) { for (let yy = y; yy < y + hh; yy++) for (let xx = x; xx < x + ww; xx++) d[(yy * w + xx) * 4 + 3] = 0; },
+      clear(x, y, ww, hh) { for (let yy = Math.max(0, y); yy < Math.min(h, y + hh); yy++) for (let xx = Math.max(0, x); xx < Math.min(w, x + ww); xx++) d[(yy * w + xx) * 4 + 3] = 0; },
       url() { g.putImageData(im, 0, 0); return c.toDataURL(); },
     };
     return P;
   }
+  // 星空：稀疏的大星星（十字形）和小星星，不撒滿天細點
+  function stars(P, w, h, cols, bgc, cw = 40, ch = 28) {
+    for (let gy = 0; gy * ch < h; gy++) for (let gx = 0; gx * cw < w; gx++) {
+      const x = gx * cw + 5 + (P.R() * (cw - 10) | 0), y = gy * ch + 4 + (P.R() * (ch - 8) | 0), c = cols[P.R() * cols.length | 0];
+      if (y >= h - 2) continue;
+      if ((gx + gy * 2) % 3 === 0) { const m = mix(c, bgc, .5); P.rect(x - 2, y, 5, 1, m); P.rect(x, y - 2, 1, 5, m); P.rect(x - 1, y, 3, 1, c); P.rect(x, y - 1, 1, 3, c); }
+      else P.set(x, y, c);
+    }
+  }
   const ramp4 = (base, dark = '#150f2e', light = '#ffffff') => [mix(base, dark, .5), mix(base, dark, .22), base, mix(base, light, .32)];
+
+  /* ================= OX 翻板：招牌、翻板、ON AIR 燈箱 ================= */
+  const markO = (P, cx, cy, rx, ry, th, c, sh) => { for (let y = Math.floor(cy - ry); y <= cy + ry + 1; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) { const k = (dy) => { const o = ((x + .5 - cx) / rx) ** 2 + ((y + .5 - dy) / ry) ** 2, i = ((x + .5 - cx) / (rx - th)) ** 2 + ((y + .5 - dy) / (ry - th)) ** 2; return o <= 1 && i > 1; }; if (k(cy)) P.set(x, y, c); else if (sh && k(cy + 2)) P.set(x, y, sh); } };
+  const markX = (P, cx, cy, rx, ry, th, c, sh) => { const bar = (d, col, oy) => P.poly([[cx - rx * d, cy - ry + oy], [cx - rx * d + th * d, cy - ry + oy], [cx + rx * d, cy + ry + oy], [cx + rx * d - th * d, cy + ry + oy]], col); if (sh) { bar(1, sh, 2); bar(-1, sh, 2); } bar(1, c, 0); bar(-1, c, 0); };
+  // 大招牌（72×52）：粗框＋亮面／暗面，亮燈時整面變亮
+  function spSign(mark, col, lit) {
+    const P = Cv(72, 52);
+    const rim = lit ? col : mix(col, INK, .5), face = lit ? '#fffaf0' : '#2c2845';
+    P.rect(0, 0, 72, 52, INK);
+    P.rect(2, 2, 68, 48, rim); P.rect(2, 2, 68, 2, mix(rim, '#ffffff', lit ? .45 : .2)); P.rect(2, 46, 68, 4, mix(rim, '#000000', .3));
+    P.rect(7, 7, 58, 38, INK); P.rect(8, 8, 56, 36, face); P.rect(8, 8, 56, 3, lit ? '#ffffff' : '#3a3559'); P.rect(8, 41, 56, 3, lit ? '#eadfc8' : '#221f38');
+    const c = lit ? col : mix(col, INK, .35), sh = lit ? mix(col, '#000000', .35) : mix(col, INK, .65);
+    if (mark === 'O') markO(P, 36, 25, 15, 15, 5, c, sh); else markX(P, 36, 25, 14, 14, 7, c, sh);
+    return P.url();
+  }
+  // 翻板（132×32）：兩色方格、白色記號
+  function spPanel(base, mark) {
+    const P = Cv(132, 32), lt = mix(base, '#ffffff', .2), dk = mix(base, '#000000', .3);
+    P.rect(0, 0, 132, 32, INK);
+    for (let y = 0; y < 2; y++) for (let x = 0; x < 8; x++) P.rect(2 + x * 16, 2 + y * 14, 16, 14, (x + y) % 2 ? base : lt);
+    P.rect(2, 2, 128, 2, mix(base, '#ffffff', .5)); P.rect(2, 27, 128, 3, dk);
+    if (mark === 'O') markO(P, 66, 15, 22, 11, 4, '#fffaf0', dk); else markX(P, 66, 15, 20, 10, 8, '#fffaf0', dk);
+    return P.url();
+  }
+  // ON AIR 燈箱（40×16）
+  function spOnAir(on) {
+    const P = Cv(40, 16), t = on ? '#fff3c4' : '#8f4a5a';
+    P.rect(0, 0, 40, 16, INK); P.rect(1, 1, 38, 14, on ? '#e8414f' : '#5a2030'); P.rect(1, 1, 38, 2, on ? '#ff7a8a' : '#6e2c40'); P.rect(1, 13, 38, 2, on ? '#b0263a' : '#431626');
+    const F = { O: ['.kk.', 'k..k', 'k..k', 'k..k', 'k..k', 'k..k', '.kk.'], N: ['k..k', 'kk.k', 'kk.k', 'k.kk', 'k.kk', 'k..k', 'k..k'], A: ['.kk.', 'k..k', 'k..k', 'kkkk', 'k..k', 'k..k', 'k..k'], I: ['kkk', '.k.', '.k.', '.k.', '.k.', '.k.', 'kkk'], R: ['kkk.', 'k..k', 'k..k', 'kkk.', 'k.k.', 'k..k', 'k..k'] };
+    let x = 7; for (const ch of 'ON AIR') { if (ch === ' ') { x += 3; continue; } F[ch].forEach((r, y) => [...r].forEach((c, i) => { if (c === 'k') P.set(x + i, 5 + y, t); })); x += F[ch][0].length + 1; }
+    return P.url();
+  }
 
   /* ================= 打怪獸：月夜城堡草原 ================= */
   function bgBoss() {
@@ -57,7 +98,7 @@
     const sky = ['#0c0a22', '#120f34', '#1a1549', '#261c60', '#372573', '#522f84', '#77408f', '#a25896', '#d27f95'];
     P.grad(0, 0, 320, 106, sky, (u, v) => Math.pow(v, 1.7));
     // 星星
-    for (let i = 0; i < 150; i++) { const x = P.R() * 320 | 0, y = P.R() * P.R() * 84 | 0, c = ['#fffaf0', '#fff3c4', '#b9d8ff', '#8f86c9'][P.R() * 4 | 0]; P.set(x, y, c); if (P.R() < .09) { const m = mix(c, '#261c60', .45); P.set(x - 1, y, m); P.set(x + 1, y, m); P.set(x, y - 1, m); P.set(x, y + 1, m); } }
+    stars(P, 320, 84, ['#fffaf0', '#fff3c4', '#b9d8ff'], '#1a1549');
     // 月亮＋月暈
     const mx = 132, my = 36, mr = 17;
     for (let y = my - 40; y < my + 40; y++) for (let x = mx - 40; x < mx + 40; x++) { const dd = Math.hypot(x + .5 - mx, y + .5 - my); if (dd < mr + 22) P.veil(x, y, dd < mr + 9 ? '#6f5fb0' : '#4a3a8c', Math.max(0, 1 - (dd - mr) / 22) * .75); }
@@ -125,7 +166,7 @@
     // 內圈：白欄杆＋花圃
     P.grad(0, 186, 320, 14, ['#2f8a3c', '#267334', '#1c5c2c']);
     for (let x = 0; x < 320; x += 9) { const r = 4 + (P.R() * 2 | 0); P.ball(x + 4, 196, r + 1, r, ['#174a26', '#1f6630', '#2f8a3c', '#4aa84a'], -.4, -.8, true); }
-    for (let i = 0; i < 70; i++) { const x = P.R() * 320 | 0, y = 190 + P.R() * 9 | 0, c = ['#ff8fb1', '#ffd166', '#fffaf0', '#ff6b6b'][i % 4]; P.set(x, y, c); P.set(x + 1, y, c); P.set(x, y + 1, mix(c, '#000000', .2)); }
+    for (let x = 0, i = 0; x < 320; x += 18, i++) { const c = ['#ff8fb1', '#ffd166', '#fffaf0', '#ff6b6b'][i % 4]; P.rect(x + 3, 191, 3, 3, c); P.rect(x + 3, 193, 3, 1, mix(c, '#000000', .2)); P.set(x + 4, 192, '#e8a23a'); }
     P.rect(0, 184, 320, 2, '#fffaf0'); P.rect(0, 186, 320, 1, '#b9b6d8');
     for (let x = 8; x < 320; x += 24) { P.rect(x, 184, 2, 8, '#fffaf0'); P.rect(x + 2, 186, 1, 6, '#b9b6d8'); }
     return P.url();
@@ -496,9 +537,7 @@
   function bgRocket() {
     const P = Cv(320, 200, 47);
     P.grad(0, 0, 320, 168, ['#0b0a1e', '#100e2a', '#171438', '#201b48', '#2b2459', '#3a3070', '#4c3f86'], (u, v) => Math.pow(v, 1.5));
-    for (let i = 0; i < 190; i++) { const x = P.R() * 320 | 0, y = P.R() * 140 | 0, c = ['#fffaf0', '#fff3c4', '#b9d8ff', '#ffd6e6', '#7f78b8'][P.R() * 5 | 0]; P.set(x, y, c); if (P.R() < .08) { const m = mix(c, '#201b48', .45); P.set(x - 1, y, m); P.set(x + 1, y, m); P.set(x, y - 1, m); P.set(x, y + 1, m); } }
-    // 銀河
-    for (let i = 0; i < 500; i++) { const t = P.R(), x = t * 320, y = 20 + t * 50 + (P.R() - .5) * 26 * (1 - Math.abs(t - .5)); P.veil(x | 0, y | 0, '#4a3f8c', .35); }
+    stars(P, 320, 140, ['#fffaf0', '#fff3c4', '#b9d8ff', '#ffd6e6'], '#171438');
     const mx = 264, my = 32, mr = 18;
     for (let y = my - 40; y < my + 40; y++) for (let x = mx - 40; x < mx + 40; x++) { const dd = Math.hypot(x + .5 - mx, y + .5 - my); if (dd < mr + 18 && dd > mr - 1) P.veil(x, y, '#4a3f8c', Math.max(0, 1 - (dd - mr) / 18) * .7); }
     P.ball(mx, my, mr, mr, ['#cdbb86', '#e6d79f', '#f6ecbb', '#fff8dc', '#fffdf2'], -.5, -.6, true);
@@ -837,8 +876,7 @@
   function spDial() {
     const P = Cv(34, 34);
     P.ell(17, 17, 17, 17, INK); P.ball(17, 17, 15, 15, ['#7d8590', '#a4acb6', '#c9ced6', '#eef1f5'], -.5, -.7, true); P.ell(17, 17, 11.4, 11.4, '#56636f'); P.ball(17, 17, 10.4, 10.4, ['#8a99a9', '#b0bcc8', '#d9dee6', '#ffffff']);
-    for (let a = 0; a < 360; a += 30) { const r = a * Math.PI / 180; P.rect(Math.round(16.5 + Math.cos(r) * 13) , Math.round(16.5 + Math.sin(r) * 13), 2, 2, INK); }
-    for (let a = 15; a < 360; a += 30) { const r = a * Math.PI / 180; P.set(17 + Math.cos(r) * 13.2, 17 + Math.sin(r) * 13.2, '#3d4856'); }
+    for (let a = 45; a < 360; a += 45) { const r = a * Math.PI / 180; P.rect(Math.round(16 + Math.cos(r) * 13), Math.round(16 + Math.sin(r) * 13), 2, 2, '#3d4856'); }
     P.rect(16, 2, 2, 9, '#d6334a'); P.rect(16, 2, 1, 9, '#ff8a8a'); P.ell(17, 17, 3.4, 3.4, INK); P.ell(17, 17, 2, 2, '#56636f'); P.set(16, 16, '#cfd9e3');
     return P.url();
   }
@@ -954,6 +992,45 @@
     return P.url();
   }
 
+  /* ================= 山洞（火車過山洞）：乾淨版，尺寸是舊圖兩倍。theme = 'hill' 草山、'cave' 岩壁 ================= */
+  function tunnel(theme) {
+    const MW = 144, MH = 140, OX0 = 12, OW = 52, OTOP = 60, OR = 26, cx = OX0 + OR, cy = OTOP + OR, cave = theme === 'cave';
+    const inHole = (x, y) => x >= OX0 && x < OX0 + OW && (y >= cy || (x + .5 - cx) ** 2 + (y + .5 - cy) ** 2 <= OR * OR);
+    const inArch = (x, y) => { const d = Math.hypot(x + .5 - cx, y + .5 - cy); return !inHole(x, y) && x >= OX0 - 8 && x < OX0 + OW + 8 && (y >= cy ? (x < OX0 || x >= OX0 + OW) : d <= OR + 8); };
+    const ridge = x => cave ? 0 : Math.max(4, Math.min(140, x < 88 ? 140 - x * 1.5 - Math.sin(x * .25) * 3 : 8 + (x - 88) * .9 + Math.sin(x * .35) * 2));
+    const edge = y => cave ? Math.max(0, 28 - y * .5) + Math.sin(y * .4) * 2.4 : 0;
+    const body = (x, y) => x >= edge(y) && y >= ridge(x);
+    const draw = () => {
+      const P = Cv(MW, MH, 13), R = cave ? ['#4b4160', '#40375a', '#352e47'] : ['#8a7866', '#7a6a5a', '#665848'];
+      for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (body(x, y)) {
+        const dy = y - ridge(x);
+        P.set(x, y, !cave && dy < 5 ? '#9ae88a' : !cave && dy < 12 ? '#6ab55a' : !cave && dy < 20 ? '#4f9a4a' : R[y < 60 ? 0 : y < 104 ? 1 : 2]);
+      }
+      // 幾塊大石面（每塊只有底色和一條亮邊）
+      (cave ? [[70, 20, 26], [104, 50, 30], [84, 88, 34], [112, 116, 22], [60, 124, 20]] : [[92, 44, 22], [108, 70, 26], [80, 96, 30], [112, 118, 24], [70, 126, 18]]).forEach(([x, y, w]) => { if (body(x, y) && body(x + w, y)) { P.rect(x, y, w, 6, cave ? '#5d5274' : '#9a8a7a'); P.rect(x, y, w, 2, cave ? '#74688c' : '#b4a492'); P.rect(x + 2, y + 6, w, 2, cave ? '#2a2438' : '#564a3e'); } });
+      if (cave) { [[104, 34, '#78e0f0'], [124, 96, '#b48cff']].forEach(([x, y, c]) => { P.poly([[x - 5, y], [x - 2, y - 12], [x + 1, y]], mix(c, '#ffffff', .5)); P.poly([[x, y], [x + 3, y - 18], [x + 7, y]], c); P.poly([[x + 6, y], [x + 9, y - 9], [x + 12, y]], mix(c, '#1a1040', .35)); P.set(x + 3, y - 18, '#ffffff'); }); }
+      else [[100, 30, 16], [118, 44, 13], [82, 20, 11]].forEach(([x, y, h]) => { for (let i = 0; i < h; i++) { const half = Math.round(1 + (i / h) * (h * .42) * (.5 + .5 * ((i % 5) / 5))); P.rect(x - half, y - h + i, half * 2 + 1, 1, '#3e8f3a'); P.rect(x - half, y - h + i, Math.max(1, half - 1), 1, '#5aa63c'); } P.rect(x - 1, y, 2, 3, '#5e3d22'); });
+      // 拱門：草山是石塊，洞穴是木框
+      for (let y = OTOP - 10; y < MH; y++) for (let x = OX0 - 10; x < OX0 + OW + 10; x++) if (inArch(x, y)) {
+        const d = Math.hypot(x + .5 - cx, y + .5 - cy), ang = Math.atan2(y - cy, x - cx), joint = y >= cy ? (y - cy) % 14 < 2 : Math.abs(((ang + Math.PI) / (Math.PI / 7)) % 1 - .5) > .43;
+        const inner = y >= cy ? (x >= OX0 - 3 && x < OX0 + OW + 3) : d < OR + 3, outer = y >= cy ? (x < OX0 - 6 || x >= OX0 + OW + 6) : d > OR + 6;
+        P.set(x, y, joint ? (cave ? '#5a3a20' : '#5d5a77') : inner ? (cave ? '#b8834e' : '#d3d1e6') : outer ? (cave ? '#7a5030' : '#8b8aa3') : (cave ? '#9a6a3f' : '#a7a4c4'));
+      }
+      P.outline(INK, 2);
+      for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (inHole(x, y)) P.clear(x, y, 1, 1);
+      // 洞口內緣描一圈黑框
+      for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (!inHole(x, y) && P.has(x, y) && (inHole(x - 1, y) || inHole(x + 1, y) || inHole(x, y + 1) || inHole(x - 2, y) || inHole(x + 2, y) || inHole(x, y + 2))) P.set(x, y, INK);
+      return P;
+    };
+    const back = draw(); back.clear(OX0 + OW, 0, MW, MH); const front = draw(); front.clear(0, 0, OX0 + OW, MH);
+    // 蓋在火車上的陰影：三段平塗的半透明黑，不用細點
+    const c = document.createElement('canvas'); c.width = MW; c.height = MH; const g = c.getContext('2d');
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (inHole(x, y)) { const t = (x - OX0) / OW, a = t < .2 ? 0 : t < .4 ? .35 : t < .6 ? .65 : .96; if (a) { g.fillStyle = `rgba(12,10,20,${a})`; g.fillRect(x, y, 1, 1); } }
+    return { mountBack: back.url(), mountFront: front.url(), holeShade: c.toDataURL() };
+  }
+  // 聚光燈：一整片半透明，不用格子點
+  function spBeam(col) { const c = document.createElement('canvas'); c.width = 40; c.height = 64; const g = c.getContext('2d'); g.fillStyle = col; g.beginPath(); g.moveTo(18, 0); g.lineTo(22, 0); g.lineTo(40, 64); g.lineTo(0, 64); g.fill(); return c.toDataURL(); }
+
   /* ================= 套用：換背景，角色交給 games-core.js（它會先看 ART.HD） ================= */
   const LANES = ['#e8414f', '#3c8dde', '#ffd166', '#2f9e5b'];
   ART.BG.boss = bgBoss();
@@ -963,12 +1040,14 @@
   ART.BG.rocket = bgRocket();
   ART.BG.fish = bgFish();
   ART.BG.ox = bgOx(); ART.BG.vote = bgVote(); ART.BG.detect = bgDetect(); ART.BG.bridge = bgBridge(); ART.BG.vault = bgVault(); ART.BG.sky = bgSky();
+  Object.assign(ART.SP, { signO: spSign('O', '#d6334a', false), signOlit: spSign('O', '#d6334a', true), signX: spSign('X', '#3c8dde', false), signXlit: spSign('X', '#3c8dde', true), panelO: spPanel('#d6334a', 'O'), panelX: spPanel('#3c8dde', 'X'), onair: [spOnAir(false), spOnAir(true)] });
+  Object.assign(ART.SP, tunnel('hill')); ART.SP.beam = spBeam('rgba(255,243,196,.3)');
   ART.SP.loco = spLoco(); ART.SP.cars = ['#ffd166', '#2f9e5b', '#b48cff', '#ff9b6b'].map(spCar);
   Object.assign(ART.SP, { safe: spSafe(), dial: spDial(), handle: spHandle(), truck: spTruck(), crate: spCrate(), lockC: spLock(false), lockO: spLock(true), pad: spPad(), tower: spTower(),
     keys: [['#ffd166', '#c98a00'], ['#d3d1e6', '#8b8aa3'], ['#ff9b6b', '#c45a2a'], ['#8fe0a2', '#3e8f3a']].map(([c, d]) => spKey(c, d)) });
   ART.BG.door = bgDoor(); ART.BG.rail = bgRail(); ART.BG.roof = bgRoof(); ART.BG.lab = bgLab();
   ART.HD = {
-    Cv, Mask, paint, mix, rampOf,
+    Cv, Mask, paint, mix, rampOf, tunnel, spBeam,
     // 第 0–3 隻是小飛龍（第 0 隻也是洞穴魔王），後面是五款可愛怪獸各四色；打怪獸每題隨機出一隻
     mon: [...MONPAL.map(monster), ...Object.keys(CUTE).flatMap(k => CUTE[k].map(c => cute[k](c)))],
     horse: LANES.map((c, i) => [0, 1].map(f => horse(COATS[i][0], COATS[i][1], c, f))),

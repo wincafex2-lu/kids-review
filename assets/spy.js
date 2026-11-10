@@ -49,7 +49,7 @@ function look(key, person, action, i = 0, opt = {}) {
     let rows = layers(person, action, i, opt.prop);
     if (action === 'walk-down' && i === 0) rows = standLegs(rows);
     if (opt.edit) rows = opt.edit(rows.slice(), action);
-    cache.set(k, pix(rows, palOf(person, opt.pal)));
+    cache.set(k, (window.PEOPLE_HD || pix)(rows, palOf(person, opt.pal), !opt.tag));
   }
   return cache.get(k);
 }
@@ -80,7 +80,7 @@ function standArm(person, step, both) {
 // 每個人隨機舉單手或舉雙手（由座號決定，同一人不會中途換）
 const bothOf = seed => rng(seed * 7 + 3)() < 0.5;
 const handCache = new Map();
-const handSrc = (seed, step) => { const k = seed + '|' + step; if (!handCache.has(k)) { const p = crewOf(seed); handCache.set(k, pix(standArm(p, step, bothOf(seed)), palOf(p))); } return handCache.get(k); };
+const handSrc = (seed, step) => { const k = seed + '|' + step; if (!handCache.has(k)) { const p = crewOf(seed); handCache.set(k, (window.PEOPLE_HD || pix)(standArm(p, step, bothOf(seed)), palOf(p), true)); } return handCache.get(k); };
 // 隊伍原地踏步：人換走路的兩格，牌子不動；相鄰的人左右腳錯開
 let stepTick = 0;
 setInterval(() => {
@@ -146,9 +146,9 @@ const IMG = {
   spring: pix(['KKKKKKKKKKKK', 'KYYYYYYYYYYK', 'KKKKKKKKKKKK', '...KQQQQK...', '....KQQK....', '...KQQQQK...', '....KQQK....', '...KQQQQK...', '..KKKKKKKK..', '..KMMMMMMK..'], PAL),
   banana: pix(['.....KK.....', '....KYYK....', '.KKKYYYYKKK.', 'KYYYYKKYYYYK', 'KYYK....KYYK', '.KK......KK.'], { K: '#0d0a16', Y: '#ffd23f' }),
   bubbleIcon: pix(['..KKKKKK..', '.KHHLLLLK.', 'KHWLLLLLLK', 'KHLLLLLLLK', 'KLLLLLLLLK', 'KLLLLLLLLK', 'KLLLLLLLHK', 'KLLLLLLHHK', '.KLLLLLHK.', '..KKKKKK..'], { K: '#0d0a16', L: '#cdeeff', H: '#8fc8ff', W: '#ffffff' }),
-  tornado: [0, 1].map(f => pix(['.KKKKKKKKKKKKKK.', 'KQQHHQQQQHHQQQQK', '.KQQQQHHQQQQHQK.', '..KHQQQQQHHQQK..', '..KQQHHQQQQQHK..', '...KQQQQHHQQK...', '...KHHQQQQQQK...', '....KQQHHQQK....', '....KQQQQHHK....', '.....KHHQQK.....', '.....KQQHHK.....', '......KQQK......', '......KHQK......', '.......KK.......'].map(r => f ? r.replace(/[QH]/g, c => c === 'Q' ? 'H' : 'Q') : r), { K: '#3a3f55', Q: '#b8c0d0', H: '#e8edf5' })),
+  tornado: [0, 1].map(f => pix(['.KKKKKKKKKKKKKK.', 'KQQQQQQQQQQQQQQK', '.KQQQQQQQQQQQQK.', '..KQQQQQQQQQQK..', '..KQQQQQQQQQQK..', '...KQQQQQQQQK...', '...KQQQQQQQQK...', '....KQQQQQQK....', '....KQQQQQQK....', '.....KQQQQK.....', '.....KQQQQK.....', '......KQQK......', '......KQQK......', '.......KK.......'].map((r, i) => ((i + f * 2) >> 1) % 2 ? r.replace(/Q/g, 'H') : r), { K: '#3a3f55', Q: '#b8c0d0', H: '#e8edf5' })),
   vacuum: pix(['..........KKKKKKK...', '.........KYYYYYYYK..', 'KKKK....KYYYYYYYYYK.', 'KQQKKKKKKYYKKKKYYYYK', 'KQQQQQQQQYYKWWKYYYYK', 'KQQKKKKKKYYKKKKYYYYK', 'KKKK....KYYYYYYYYYK.', '.........KYYYYYYYYK.', '.........KKKKKKKKKK.', '..........KK....KK..', '..........KK....KK..', '...........K....K...'], { K: '#0d0a16', Y: '#3fa7d6', Q: '#dfe3ea', W: '#ffcc4d' }),
-  net: pix(['..KKKKKK........', '.KHMHMHMK.......', 'KMHMHMHMHK......', 'KHMHMHMHMK......', 'KMHMHMHMHK......', 'KHMHMHMHMK......', '.KHMHMHMK.......', '..KKKKKKKE......', '.........EE.....', '..........EE....', '...........EE...', '............EE..', '.............EE.', '..............EE', '...............E', '................'], { K: '#0d0a16', H: '#ffffff', M: '#c9c3e6', E: '#8a5a2b' }),
+  net: pix(['..KKKKKK........', '.KHHMHHMK.......', 'KHHHMHHMHK......', 'KMMMMMMMMK......', 'KHHHMHHMHK......', 'KHHHMHHMHK......', '.KMMMMMMK.......', '..KKKKKKKE......', '.........EE.....', '..........EE....', '...........EE...', '............EE..', '.............EE.', '..............EE', '...............E', '................'], { K: '#0d0a16', H: '#ffffff', M: '#c9c3e6', E: '#8a5a2b' }),
   cage: pix(['.......KK.......', '......K..K......', 'KKKKKKKKKKKKKKKK', 'KQQQQQQQQQQQQQQK', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'K..Q..Q..Q..Q..K', 'KQQQQQQQQQQQQQQK', 'KKKKKKKKKKKKKKKK'], { K: '#0d0a16', Q: '#ffcc4d' }),
   pitIcon: pix(['..KKKKKKKK..', '.KEEEEEEEEK.', 'KEffffffffEK', '.KffffffffK.', '..KKKKKKKK..'], PAL),
   eagle: [
@@ -177,7 +177,7 @@ IMG.ufo = [0, 1].map(k => rects(32, 14, [
 IMG.boom = (() => {
   const c = document.createElement('canvas'); c.width = c.height = 16; const g = c.getContext('2d');
   for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
-    const d = Math.hypot(x - 7.5, y - 7.5) + Math.random() * 1.6;
+    const d = Math.hypot(x - 7.5, y - 7.5) + (Math.round((Math.atan2(y - 7.5, x - 7.5) / Math.PI + 1) * 6) % 2) * 1.5;   // 固定的尖角，不用亂數雜點
     if (d > 8) continue;
     g.fillStyle = d < 3 ? '#fff4c2' : d < 5 ? '#ffd166' : d < 6.6 ? '#ff7a1a' : '#d6334a';
     g.fillRect(x, y, 1, 1);
@@ -193,7 +193,7 @@ $('#sun').src = (() => { const m = []; for (let y = 0; y < 12; y++) { let r = ''
     const w = 8 + Math.floor(r() * 12), h = 10 + Math.floor(r() * 24);
     g.fillStyle = '#9fc3e3'; g.fillRect(x, 36 - h, w, h);
     g.fillStyle = '#c4def2';
-    for (let yy = 36 - h + 2; yy < 34; yy += 3) for (let xx = x + 2; xx < x + w - 1; xx += 3) if (r() < .55) g.fillRect(xx, yy, 1, 1);
+    g.fillRect(x, 36 - h, w, 1);   // 只留屋頂一條亮邊，不畫一點一點的窗戶
     x += w + (r() < .3 ? 2 : 0);
   }
   const city = $('#city');

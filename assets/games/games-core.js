@@ -81,7 +81,7 @@ function look(person, key, pose = 'stand', step = 0, face = '', pal) {
     if (pose === 'right' || pose === 'left') rows = layers(person, 'walk-' + pose, step);
     else { rows = step === 0 && pose !== 'step' ? standLegs(layers(person, 'walk-down', 0)) : layers(person, 'walk-down', step); if (pose === 'cheer') rows = armsUp(rows); }
     if (face && FACE[face]) rows = FACE[face](rows.slice());
-    pcache.set(k, pix(rows, Object.assign({}, PP.frame(person, 'walk-down', 0).palette, { R: '#d6334a' }, pal)));
+    pcache.set(k, (window.PEOPLE_HD || pix)(rows, Object.assign({}, PP.frame(person, 'walk-down', 0).palette, { R: '#d6334a' }, pal), !face));
   }
   return pcache.get(k);
 }

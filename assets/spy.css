@@ -47,7 +47,7 @@ button:focus-visible { outline: 3px solid var(--hot); outline-offset: 3px }
 .disp img { height: 36px; width: auto; image-rendering: pixelated }
 .disp small { font-family: var(--pixel); font-size: 11px; color: var(--hot) }
 .plaza { border-top: 4px solid var(--grass2); padding: 22px 10px calc(4 * var(--px));
-  background: var(--grass) conic-gradient(rgba(255,255,255,.08) 25%, transparent 0 50%, rgba(255,255,255,.08) 0 75%, transparent 0) 0 0 / 32px 32px }
+  background: var(--grass) }
 .line { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: calc(5 * var(--px)) 2px; min-height: calc(38 * var(--px)) }
 .road { height: calc(22 * var(--px)); background:
   linear-gradient(#cfd3da 0 6px, #8b93a0 6px 9px, transparent 9px),

@@ -80,7 +80,7 @@
     // 遠處岩稜
     let j = 0; for (let x = 0; x < 320; x++) { j += (P.R() - .5) * 2.6; j = Math.max(-4, Math.min(4, j)); const top = Math.round(104 - 14 * (.5 + .5 * Math.sin(x * .05 + 1)) + j); for (let y = top; y < 114; y++) P.set(x, y, y - top < 2 ? '#3a3154' : '#262038'); }
     ceiling(P, 26, 26, '#0c0a16', '#2a2340');
-    for (let i = 0; i < 46; i++) P.set(60 + P.R() * 200, 26 + P.R() * 70, P.R() < .5 ? '#78e0f0' : '#b48cff');
+    for (let i = 0; i < 9; i++) { const x = 66 + i * 22 + (P.R() * 10 | 0), y = 34 + (P.R() * 56 | 0), c = i % 2 ? '#78e0f0' : '#b48cff', m = ART.mix(c, '#14101f', .5); P.rect(x - 2, y, 5, 1, m); P.rect(x, y - 2, 1, 5, m); P.rect(x - 1, y, 3, 1, c); P.rect(x, y - 1, 1, 3, c); }
     // 峽谷深處：平塗三層
     P.rect(0, 112, 320, 24, '#221c30'); P.rect(0, 136, 320, 20, '#191424'); P.rect(0, 156, 320, 16, '#110d1a');
    
@@ -288,5 +288,6 @@
     return P.url();
   }
 
+  Object.assign(ART.SP, ART.HD.tunnel('cave')); ART.SP.beam = ART.HD.spBeam('rgba(160,240,255,.28)');
   Object.assign(BG, { ox: ox(), bridge: bridge(), rail: rail(), door: door(), lair: lair(), map: map(), lab: lab(), vault: vault(), bomb: bomb(), fish: fish(), chase: chase() });
 })();
