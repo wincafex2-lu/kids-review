@@ -775,6 +775,39 @@ function startQuestion() {
   q.res = { found: false, fixed: false, shot: null, picked: null };
 }
 
+/* 反轉演出：抓對人時偶爾先演「被間諜躲開了」，再出動真正的方法抓到他（大約三題一次，不會連續兩題）。
+   只在抓對時出現，所以結果不會騙人。window.KR_TWIST = true／false 可以強制開或關（測試用）。 */
+let twistGap = 9;
+function twist(hit) {
+  twistGap++;
+  if (!hit) return false;
+  const on = window.KR_TWIST != null ? !!window.KR_TWIST : twistGap > 1 && Math.random() < .3;
+  if (on) twistGap = 0;
+  return on;
+}
+async function dodge(el) {
+  const p = PX(), t = imgBox(el), W = stage.clientWidth, im = el.querySelector('img');
+  const dir = t.cx > W / 2 ? -1 : 1, hop = `translate(${dir * 13 * p}px,0)`;
+  // 第一發飛彈從斜上方飛來，間諜往旁邊一跳，飛彈打在空地上
+  const m = spr(IMG.missile, 14, 5, 12), w = 14 * p, h = 5 * p;
+  const sx = dir > 0 ? W + 40 : -40, sy = -40, ty = t.b - 3 * p, ang = Math.atan2(ty - sy, t.cx - sx) * 180 / Math.PI + 180;
+  SFX.whistle();
+  const fly = mv(m, [at(sx - w / 2, sy - h / 2, `rotate(${ang}deg)`), at(t.cx - w / 2, ty - h / 2, `rotate(${ang}deg)`)], 750, 'cubic-bezier(.5,0,1,1)');
+  await wait(470);
+  im.src = SPR.spySmug; el.style.zIndex = 5;
+  const side = el.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${dir * 7 * p}px,${-9 * p}px)`, offset: .5 }, { transform: hop }], { duration: T(260), easing: 'ease-out', fill: 'forwards' });
+  await fly; m.remove();
+  SFX.boom(); boomAt(t.cx, ty - 4 * p, 20 * p); shake();
+  $('#mission').innerHTML = '被他躲開了？！';
+  say(t.cx + dir * 13 * p, t.y - 17 * p, '嘿嘿，打不到！', 1100); SFX.laugh();
+  await wait(1250);
+  await el.animate([{ transform: hop }, { transform: `translate(${dir * 7 * p}px,${-6 * p}px)`, offset: .5 }, { transform: 'translate(0,0)' }], { duration: T(260), easing: 'ease-in' }).finished;
+  side.cancel(); el.style.zIndex = '';
+  im.src = SPR.spyScared;
+  $('#mission').innerHTML = '再來一次！這次跑不掉了！';
+  await wait(650);
+}
+
 async function shoot(el) {
   if (phase !== 'find') return;
   phase = 'busy';
@@ -785,6 +818,7 @@ async function shoot(el) {
   await wait(550);
   const m = nextMethod();
   await roulette(m);
+  if (twist(hit)) await dodge(el);
   await m.run(el, hit);
   el.classList.remove('locked');
   if (hit) {

@@ -69,7 +69,7 @@ svg.ov { inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: vi
 .part { z-index: 30; pointer-events: none }
 .puff { border-radius: 50%; z-index: 12; pointer-events: none; translate: -50% -50% }
 .bubble { z-index: 25; translate: -50% -100%; background: var(--paper); border: .5cqw solid var(--ink); padding: .2cqw 1.2cqw; font-weight: 900; font-size: 3.4cqw; white-space: nowrap; pointer-events: none }
-.bubble::after { content: ""; position: absolute; left: 50%; bottom: -1.6cqw; border: .8cqw solid transparent; border-top-color: var(--ink); translate: -50% 0 }
+.bubble::after { content: ""; position: absolute; left: calc(50% + var(--tail, 0cqw)); bottom: -1.6cqw; border: .8cqw solid transparent; border-top-color: var(--ink); translate: -50% 0 }
 .sweat { z-index: 9; width: 1.6cqw; height: 2.4cqw; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #8ccdf3; border: .3cqw solid #1d1b2e; animation: sweat .6s ease-in infinite }
 @keyframes sweat { from { transform: translateY(0); opacity: 1 } to { transform: translateY(3cqw); opacity: 0 } }
 .actor { z-index: 8; translate: -50% -100% }

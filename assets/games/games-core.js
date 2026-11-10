@@ -98,7 +98,10 @@ class Actor {
   move(x, y) { this.x = x; this.y = y; at(this.e, x, y); }
   async walkTo(x, ms, back = 'stand') { const x0 = this.x; this.set(x > x0 ? 'right' : 'left', this.face, true); await tween(ms, t => this.move(x0 + (x - x0) * t, this.y)); this.set(back); }
   hop(n = 3, h = 2) { return anim(this.e, Array.from({ length: n * 2 + 1 }, (_, i) => ({ transform: `translateY(${i % 2 ? -h : 0}cqw)` })), 260 * n, { fill: 'none' }); }
-  say(text, ms = 1400) { const b = at(el('div', 'bubble', esc(text)), this.x, this.y - 20 * this.s - 1); this.e.parentNode.append(b); if (ms) setTimeout(() => b.remove(), T(ms)); return b; }
+  say(text, ms = 1400) { const b = at(el('div', 'bubble', esc(text)), this.x, this.y - 20 * this.s - 1); const par = this.e.parentNode; par.append(b);
+    // 靠近畫面邊緣時把對話框推回畫面裡，尖角仍指著說話的人
+    if (par.classList.contains('scene') && par.clientWidth) { const w = b.offsetWidth / par.clientWidth * 100, x = Math.max(w / 2 + .6, Math.min(99.4 - w / 2, this.x)); if (x !== this.x) { b.style.left = U(x); b.style.setProperty('--tail', U(this.x - x)); } }
+    if (ms) setTimeout(() => b.remove(), T(ms)); return b; }
   async cheer() { this.set('cheer', 'happy', true); await this.hop(3, 2.4); }
   async sad() { this.set('stand', 'sad'); await anim(this.e, [{ transform: 'none' }, { transform: 'translateY(.6cqw) scaleY(.94)' }], 300); }
 }
@@ -184,6 +187,20 @@ function choose(scene, tags) {
   }));
 }
 function zoom(scene, ox, oy, s, ms) { scene.style.transformOrigin = `${ox}% ${oy}%`; return anim(scene, [{ transform: `scale(${scene._z || 1})` }, { transform: `scale(${s})` }], ms, { easing: 'ease-in-out' }).then(() => { scene._z = s; }); }
+/* 反轉演出：答對時偶爾先演「看起來要失敗了」，最後一刻才逆轉成功（大約三題一次，不會連續兩題都出現）。
+   只在答對時出現，所以結果不會騙人。window.KR_TWIST = true／false 可以強制開或關（測試用）。 */
+let twistGap = 9;
+function twist(ok) {
+  twistGap++;
+  if (!ok) return false;
+  const on = window.KR_TWIST != null ? !!window.KR_TWIST : twistGap > 1 && Math.random() < .3;
+  if (on) twistGap = 0;
+  return on;
+}
+// 畫面下方的旁白條（再叫一次就換字；unnote 拿掉）
+function note(scene, text) { let b = scene.querySelector('.commentary'); if (!b) { b = el('div', 'commentary'); scene.append(b); } b.hidden = false; b.textContent = text; return b; }
+const unnote = scene => scene.querySelector('.commentary')?.remove();
+const uhoh = () => { tone(330, .18, 'square', .05); tone(220, .3, 'square', .05, 160); };
 
 /* ======================================================================
    遊戲：play(scene, opts, ans) 先等小朋友選，播動畫，閃光後才揭曉
@@ -235,13 +252,18 @@ const OX = { id: 'ox', name: '⭕ OX 翻板大挑戰', how: '站到你覺得對�
     await kid.walkTo(kx, 900);
     // 其他人最後站定：兩邊至少兩個人
     await sleep(300);
-    const sides = shuffle([0, 0, 1, 1, Math.random() < .5 ? 0 : 1, Math.random() < .5 ? 0 : 1]);
+    const nO = pick([2, 3, 3, 4]), sides = shuffle([0, 1, 2, 3, 4, 5].map(i => i < nO ? 0 : 1));   // 兩邊人數每次不一樣：2–4、3–3、4–2
     const used = [0, 0], order = [shuffle(SPOTS[0]), shuffle(SPOTS[1])];
     npcs.forEach((a, i) => { a.side = sides[i]; });
     await Promise.all(npcs.map(async a => { await idle(a); const x = order[a.side][used[a.side]++] + rnd(-1, 1); await a.walkTo(x, Math.abs(x - a.x) * 18 + 200); }));
-    // 有人最後一刻改變心意
-    const ch = pick(npcs); ch.say('等等！我要換邊！', 1200); await sleep(700); SFX.whoosh();
-    ch.side = 1 - ch.side; { const x = MID[ch.side] + pick([-1, 1]) * rnd(10, 14); await ch.walkTo(x, Math.abs(x - ch.x) * 14 + 200); }
+    // 倒數前的小插曲，每次不一樣：沒人動、一個人換邊、兩個人接連換邊、有人走到一半又折回去、兩個人鬥嘴
+    const swap = async (a, line) => { a.say(line, 1200); await sleep(700); SFX.whoosh(); a.side = 1 - a.side; const x = MID[a.side] + pick([-1, 1]) * rnd(10, 14); await a.walkTo(x, Math.abs(x - a.x) * 14 + 200); };
+    const beat = pick(['none', 'one', 'one', 'two', 'back', 'talk']), [n1, n2] = shuffle(npcs);
+    if (beat === 'one') await swap(n1, pick(['等等！我要換邊！', '我改變主意了！', '還是那邊比較對！']));
+    else if (beat === 'two') { await swap(n1, '等等！我要換邊！'); await swap(n2, pick(['那我也要換！', '等我一下！'])); }
+    else if (beat === 'back') { n1.say('我想換邊…', 900); await sleep(600); const x0 = n1.x; await n1.walkTo(50, Math.abs(50 - x0) * 14 + 200); n1.say(pick(['算了，我相信自己！', '不對，還是原來那邊！']), 1100); await sleep(500); await n1.walkTo(x0, Math.abs(50 - x0) * 14 + 200); }
+    else if (beat === 'talk') { n1.say(pick(['這題我有把握！', '一定是這邊啦！', '好緊張…']), 1200); await sleep(600); n2.say(pick(['真的嗎？', '我覺得是這邊！', '噓——要倒數了！']), 1200); await sleep(900); }
+    else await sleep(400);
     // 倒數：光束左右掃、招牌輪流亮
     beams.forEach(b => b.style.opacity = 1);
     const big = at(el('div', 'big', '3'), 50, 13); big.style.fontSize = U(8); scene.append(big);
@@ -260,6 +282,14 @@ const OX = { id: 'ox', name: '⭕ OX 翻板大挑戰', how: '站到你覺得對�
     await sleep(500);
     await revealFlash(scene);
     const ok = k === ans, bad = 1 - ans;
+    if (twist(ok)) {
+      // 反轉：錯的那邊招牌先亮起來、自己腳下的地板晃了一下，原來是燈號跳錯
+      signs[bad].src = sp(bad ? 'signXlit' : 'signOlit'); beams[bad].style.rotate = '0deg'; beams[bad].style.opacity = 1; uhoh();
+      kid.set('stand', 'scared'); kid.say('咦？！', 1000);
+      await anim(panels[ans], [0, .5, -.3, .6, -.2, 0].map(d => ({ translate: `0 ${d}cqw` })), 900, { fill: 'none' });
+      note(scene, '等等……燈號跳錯了！'); await sleep(800);
+      signs[bad].src = sp(bad ? 'signX' : 'signO'); beams[bad].style.opacity = 0; tone(1200, .12, 'square', .05); await sleep(350); unnote(scene);
+    }
     signs[ans].src = sp(ans ? 'signXlit' : 'signOlit'); anim(signs[ans], [{ scale: 1 }, { scale: 1.12 }, { scale: 1 }], 500);
     beams[ans].style.rotate = '0deg'; beams[ans].style.opacity = 1;
     const losers = npcs.filter(a => a.side === bad).concat(ok ? [] : [kid]);
@@ -318,9 +348,16 @@ const VOTE = { id: 'vote', name: '🗳️ 班會開票', how: '投票給說對�
     SFX.pop(); anim(box, [{ scale: 1 }, { scale: '1.08 .92' }, { scale: 1 }], 260, { fill: 'none' });
     cards.forEach((c, i) => { if (i !== k) c.classList.remove('dim'); });
     leader.say('開票囉！', 1100); await sleep(1200);
-    // 劇本：對手一路領先，最後打成平手，最後一票揭曉
+    // 劇本每次不一樣，但最後一票之前一定打成平手，最後一票才揭曉
     const R = k !== ans ? k : pick([0, 1, 2, 3].filter(i => i !== ans)), others = [0, 1, 2, 3].filter(i => i !== ans && i !== R);
-    const C = ans, seq = [R, others[0], R, C, R, others[1] ?? others[0], C, R, C, C, R, C];
+    const C = ans, o0 = others[0], o1 = others[1] ?? others[0];
+    const seq = pick([
+      [R, o0, R, C, R, o1, C, R, C, C, R, C],   // 對手一路領先，最後被追平
+      [C, o0, C, R, C, o1, R, C, R, R],         // 一開始領先，被對手追平
+      [o0, R, C, o0, R, C, o0, R, C, R, C],     // 三個人咬得很緊
+      [R, C, R, C, o0, R, C, o1, R, C],         // 你一票我一票
+      [o0, o1, R, R, R, C, R, C, C, C],         // 對手衝很快，最後連追三票
+    ]);
     const draw = i => {
       const n = ++counts[i], g = n <= 5 ? 0 : 1, s = (n - 1) % 5, gx = XS[i] + (g ? 1.2 : -7.2), gy = 9;
       const L = [[gx + .4, gy, gx + 5.8, gy], [gx + 3.1, gy, gx + 3.1, gy + 6], [gx + 3.1, gy + 3, gx + 5.4, gy + 3], [gx + 1, gy + 2.6, gx + 1, gy + 6], [gx, gy + 6, gx + 6.2, gy + 6]][s];
@@ -352,16 +389,22 @@ const VOTE = { id: 'vote', name: '🗳️ 班會開票', how: '投票給說對�
     for (let j = 0; j < seq.length; j++) {
       await readOne(seq[j], false);
       const L = lead();
-      if (j === 7) { banner.hidden = false; banner.textContent = `${R + 1}號遙遙領先！`; }
-      if (j === 9) banner.textContent = '追上來了，拉鋸戰！';
-      if (j === seq.length - 1) { banner.textContent = `${counts[R]} 比 ${counts[C]} 平手！最後一票…`; SFX.drum(12); }
-      await sleep(j < 6 ? 180 : j < 10 ? 380 : 650);
-      void L;
+      // 旁白跟著票數走
+      const top = Math.max(...counts), second = [...counts].sort((a, b) => b - a)[1];
+      if (j === seq.length - 1) { banner.hidden = false; banner.textContent = `${counts[R]} 比 ${counts[C]} 平手！最後一票…`; SFX.drum(12); }
+      else if (j >= 4) { banner.hidden = false; banner.textContent = L >= 0 ? `${L + 1}號${top - second >= 2 ? '遙遙領先！' : '暫時領先！'}` : counts.filter(c => c === top).length >= 3 ? '三個人同票！' : '追平了，拉鋸戰！'; }
+      await sleep(j < seq.length - 6 ? 180 : j < seq.length - 2 ? 380 : 650);
+    }
+    const ok = k === ans;
+    if (twist(ok)) {
+      // 反轉：「最後一票」開出來是對手，眼看要落選了，結果票箱底還壓著兩張
+      await readOne(R, false); banner.textContent = `${R + 1}號多一票，要當選了嗎…`; cands[R].hop(2, 1.4); uhoh(); await sleep(1400);
+      leader.say('等等！箱子底還有兩張！', 1500); anim(box, [{ rotate: '0deg' }, { rotate: '-8deg' }, { rotate: '8deg' }, { rotate: '0deg' }], 500, { fill: 'none' }); await sleep(1600);
+      await readOne(C, false); banner.textContent = '又平手了！這次真的是最後一票…'; SFX.drum(12); await sleep(700);
     }
     cands.forEach(c => c.set('stand', 'scared'));
     await readOne(C, true);
     banner.textContent = `${C + 1}號當選！`;
-    const ok = k === ans;
     const ros = mkImg('rosette', XS[C] + 1.5, 31, 5.6, 8, 'rosette'); scene.append(ros);
     anim(ros, [{ scale: 0, rotate: '-40deg' }, { scale: 1.3, rotate: '10deg' }, { scale: 1, rotate: '0deg' }], 500);
     cards[C].classList.add('win'); cards[C].classList.remove('dim');
@@ -508,8 +551,19 @@ const BRIDGE = { id: 'bridge', name: '🌉 吊橋過峽谷', how: '上面的吊�
     await revealFlash(scene);
     const ok = k === ans;
     if (ok) {
+      if (twist(ok)) {
+        // 反轉：才要往前走，前面那片木板就斷了，差點掉下去，跳過缺口才過關
+        const gap = Math.floor((50 - X0) / PW) + 1, pl = planks[k][gap];
+        SFX.snip(); tone(120, .4, 'sawtooth', .1, 0, 40); broken[k].add(gap);
+        anim(pl, [{ transform: 'none' }, { transform: `translate(${rnd(-3, 3)}cqw, 40cqw) rotate(${rnd(-200, 200)}deg)` }], 1100, { easing: 'cubic-bezier(.5,0,1,1)' });
+        sag[k] = 1.5; layout(k); kid.move(50, footY(50)); kid.set('stand', 'scared'); kid.say('哇！木板斷了！', 1100); shake();
+        await anim(kid.e, [{ rotate: '0deg' }, { rotate: '10deg' }, { rotate: '-8deg' }, { rotate: '6deg' }, { rotate: '0deg' }], 1200, { fill: 'none' });
+        SFX.pop(); const x1 = X0 + (gap + 1.6) * PW;
+        await tween(520, t => { const x = 50 + (x1 - 50) * t; kid.move(x, footY(x) - Math.sin(Math.PI * t) * 7); });
+        sag[k] = 0; layout(k);
+      }
       kid.set('right', 'happy', true);
-      await tween(1500, t => { const x = 50 + (88 - 50) * t; kid.move(x, footY(x)); });
+      { const xa = kid.x; await tween(1500, t => { const x = xa + (88 - xa) * t; kid.move(x, footY(x)); }); }
       kid.move(88, fy); const f = img(sp('flag'), 92, fy - 10, 7.5, 10, 'flagp'); scene.append(f);
       anim(f, [{ transform: 'translateY(4cqw) scaleY(0)' }, { transform: 'none' }], 400, { easing: 'cubic-bezier(.3,1.6,.6,1)' });
       SFX.win(); confetti(scene); kid.cheer(); stamp(scene, true, '安全過橋！', 14);
@@ -569,6 +623,14 @@ const SAFE = { id: 'safe', name: '🔐 金庫保險箱', how: '四張紙條是�
     await revealFlash(scene);
     const ok = k === ans;
     if (ok) {
+      if (twist(ok)) {
+        // 反轉：先跳出 ERROR、警報燈閃了幾下，重新檢查後才變成 OPEN
+        lcd.textContent = 'ERROR'; lcd.classList.add('bad'); uhoh(); siren.style.opacity = 1;
+        siren.animate([{ filter: 'brightness(1)' }, { filter: 'brightness(2.2)' }], { duration: T(240), iterations: 4, direction: 'alternate' });
+        kid.say('怎麼會？', 1000); await sleep(1200);
+        lcd.classList.remove('bad'); for (const d of ['-', '- -', '- - -', '- - - -']) { lcd.textContent = d; SFX.tick(); await sleep(240); }
+        siren.style.opacity = 0;
+      }
       lcd.textContent = 'OPEN'; lcd.classList.add('ok');
       await tween(400, t => hand.style.rotate = (54 + 126 * t) + 'deg', ease.out); tone(180, .5, 'sawtooth', .05, 0, 90);
       await anim(door, [{ transform: 'perspective(60cqw) rotateY(0)' }, { transform: 'perspective(60cqw) rotateY(-105deg)' }], 900, { easing: 'cubic-bezier(.4,0,.2,1)' });
@@ -638,6 +700,11 @@ const TRUCK = { id: 'truck', name: '🚚 送貨到府', how: '客人訂的是正
     await revealFlash(scene);
     const ok = k === ans;
     anim(lid, [{ transform: 'none' }, { transform: 'translate(6cqw,-14cqw) rotate(200deg)', opacity: 0 }], 600);
+    if (twist(ok)) {
+      // 反轉：箱子打開看起來是空的，原來東西壓在最底下
+      cust.set('stand', 'scared'); cust.say('咦？空的？', 1100); uhoh(); await sleep(1400);
+      anim(box, [{ rotate: '0deg' }, { rotate: '-6deg' }, { rotate: '6deg' }, { rotate: '0deg' }], 400, { fill: 'none' }); SFX.pop(); cust.say('啊，壓在最底下！', 1000); await sleep(600);
+    }
     const pop = at(el('div', 'slipv small', esc(opts[k])), 57, 34); scene.append(pop);
     anim(pop, [{ transform: 'translateY(4cqw) scale(.3)', opacity: 0 }, { transform: 'none', opacity: 1 }], 400, { easing: 'cubic-bezier(.3,1.6,.6,1)' });
     if (ok) { rise(scene, sp('star'), 57, 38, 10, 3.4); SFX.win(); confetti(scene); cust.cheer(); cust.say('就是這個！', 1600); stamp(scene, true, '送對了！', 14); }
@@ -674,6 +741,11 @@ const LOCK = { id: 'lock', name: '🗝️ 寶藏大門', how: '四把鑰匙只�
     await revealFlash(scene);
     const ok = k === ans;
     if (ok) {
+      if (twist(ok)) {
+        // 反轉：轉到底鎖還是不開，用力拍一下才彈開
+        uhoh(); anim(lock, [0, .5, -.5, .4, -.3, 0].map(d => ({ translate: d + 'cqw 0' })), 500, { fill: 'none' }); kid.set('stand', 'sad'); kid.say('卡住了？', 1000); await sleep(1200);
+        await kid.walkTo(41, 350); SFX.click(); tone(160, .1, 'square', .08); anim(kid.e, [{ transform: 'none' }, { transform: 'translateX(1.5cqw) rotate(8deg)' }, { transform: 'none' }], 220, { fill: 'none' }); shake(); await sleep(400);
+      }
       lock.src = sp('lockO'); SFX.clink(); key.remove();
       anim(lock, [{ transform: 'none' }, { transform: 'translateY(-2cqw) rotate(-10deg)', offset: .2 }, { transform: 'translateY(26cqw) rotate(40deg)', opacity: 0 }], 900, { easing: 'cubic-bezier(.5,0,1,1)' });
       await sleep(400);
@@ -734,13 +806,21 @@ const TRAIN = { id: 'train', name: '🚂 火車過山洞', how: '幫火車頭接
     await revealFlash(scene);
     // 山洞另一頭（左右翻轉的山）
     tn.forEach(m => m.remove()); tn = tunnel(-7, true); dark.remove();
-    const ok = k === ans;
+    const ok = k === ans, tw = twist(ok), alone = !ok || tw;   // 反轉時火車頭先自己出洞
     loco.style.left = U(-3); follow();
-    if (ok) { c.style.left = U(-3 - CW); tg.style.left = U(-3 - CW / 2); } else { c.style.visibility = 'hidden'; tg.style.visibility = 'hidden'; }
-    const go = ok ? [loco, c, tg] : [loco], b2 = go.map(p => parseFloat(p.style.left));
+    if (!alone) { c.style.left = U(-3 - CW); tg.style.left = U(-3 - CW / 2); } else { c.style.visibility = 'hidden'; tg.style.visibility = 'hidden'; }
+    const go = alone ? [loco] : [loco, c, tg], b2 = go.map(p => parseFloat(p.style.left));
     await tween(2000, t => { const d = 55 * ease.out(t); go.forEach((p, i) => p.style.left = U(b2[i] + d)); follow(); });
     bob.forEach(b => b.cancel());
     if (ok) {
+      if (tw) {
+        // 反轉：出了山洞車廂不見了，原來只是慢了一點，自己滑出來接上
+        driver.set('stand', 'scared'); driver.say('車廂呢？', 1100); uhoh(); await sleep(1300);
+        const lx = parseFloat(loco.style.left); c.style.visibility = 'visible'; c.style.zIndex = 5;
+        await tween(1100, t => { c.style.left = U(4 + (lx - CW - 4) * ease.out(t)); });
+        tg.style.left = U(lx - CW / 2); tg.style.visibility = 'visible';
+        SFX.clink(); tone(200, .1, 'square', .08); anim(c, [{ translate: '0 0' }, { translate: '.4cqw 0' }, { translate: '0 0' }], 160, { fill: 'none' }); await sleep(300);
+      }
       [880, 1100, 1320].forEach((f, i) => tone(f, .25, 'triangle', .07, i * 180)); SFX.win(); confetti(scene); driver.set('stand', 'happy'); driver.hop(3, 1); driver.say('平安到站！', 1500); stamp(scene, true, '平安到站！', 12);
     } else {
       driver.say('車廂呢？', 1300); SFX.lose(); await sleep(900);
@@ -795,6 +875,11 @@ const DOVE = { id: 'dove', name: '🕊️ 信鴿送信', how: '把寫著正確�
     const ok = k === ans;
     const paper = at(el('div', 'slipv pp small', esc(opts[k])), 68, 17); scene.append(paper);
     anim(paper, [{ transform: 'scale(.3)', opacity: 0 }, { transform: 'none', opacity: 1 }], 350);
+    if (twist(ok)) {
+      // 反轉：奶奶看不懂，原來是信拿反了
+      paper.style.rotate = '180deg'; rise(scene, sp('qmark'), 88, 28, 4, 3); nana.set('stand', 'sad'); nana.say('看不懂耶…', 1100); uhoh(); await sleep(1400);
+      SFX.whoosh(); await anim(paper, [{ rotate: '180deg' }, { rotate: '0deg' }], 450); nana.say('啊，拿反了！', 1000); await sleep(1000);
+    }
     if (ok) { rise(scene, sp('heart'), 88, 28, 8, 3.4); SFX.win(); confetti(scene); nana.cheer(); kid.cheer(); nana.say('寫得真好！', 1600); stamp(scene, true, '送到了！', 12); }
     else { paper.classList.add('wrong'); rise(scene, sp('qmark'), 88, 28, 5, 3); SFX.lose(); nana.sad(); nana.say('看不懂耶…', 1600); kid.sad(); dove.animate([{ transform: 'none' }, { transform: 'translateY(-1cqw) rotate(-15deg)' }, { transform: 'none' }], { duration: 500, iterations: 2 }); stamp(scene, false, '送錯信了！', 12); }
     return { ok, k };
@@ -830,6 +915,13 @@ const LAB = { id: 'lab', name: '🧪 神奇實驗室', how: '把寫著正確答�
     await revealFlash(scene);
     const ok = k === ans;
     if (ok) {
+      if (twist(ok)) {
+        // 反轉：燒瓶越脹越大、冒黑煙，眼看要爆炸，結果只「噗」一聲
+        uhoh(); doc.say('要爆炸了？！', 1100);
+        for (let i = 0; i < 4; i++) setTimeout(() => puff(scene, FX + rnd(-4, 4), 14, rnd(4, 7), '#5d5a77', 1200, rnd(-2, 2), -6), T(i * 180));
+        await anim(flask, [{ scale: 1 }, { scale: 1.25 }, { scale: 1.1 }, { scale: 1.35 }], 1000);
+        SFX.pop(); puff(scene, FX, 12, 9, '#ffffff', 700, 0, -5); await anim(flask, [{ scale: 1.35 }, { scale: .95 }, { scale: 1 }], 350); await sleep(250);
+      }
       const rb = ['#e8414f', '#ff7a1a', '#ffd166', '#2f9e5b', '#3c8dde', '#8a63e8']; let j = 0;
       const rain = setInterval(() => { if (!flask.isConnected || j > 12) return clearInterval(rain); flask.src = ART.SP.flask(rb[j++ % 6], 3); }, 110);
       const spr = img(sp('sprout'), FX - 6.25, -2, 12.5, 13.75, 'sprout'); scene.append(spr);
@@ -901,6 +993,12 @@ const SIX = [
     sweat.remove();
     const ok = k === ans;
     if (ok) {
+      if (twist(ok)) {
+        // 反轉：歸零後炸彈脹大發紅，眼看要炸了，又慢慢縮回去
+        const hot = 'brightness(1.8) sepia(1) hue-rotate(-30deg)';
+        uhoh(); await anim(bomb, [{ scale: 1, filter: 'none' }, { scale: 1.22, filter: hot }], 500); guy.say('完了！', 800); await sleep(800);
+        tone(500, .3, 'sine', .06, 0, 120); await anim(bomb, [{ scale: 1.22, filter: hot }, { scale: .96, filter: 'none' }, { scale: 1, filter: 'none' }], 450); await sleep(300);
+      }
       lcd.textContent = 'SAFE'; lcd.classList.add('safe'); led.className = 'led safe';
       for (let i = 0; i < 5; i++) puff(scene, 25, 7, 3, '#b9b6d8', 1500, rnd(-2, 2), -6);
       zoom(scene, BX, 45, 1, 600); SFX.win(); confetti(scene); guy.cheer(); stamp(scene, true, '炸彈解除！');
@@ -949,16 +1047,19 @@ const SIX = [
     say.textContent = '出發！'; fans.forEach(f => f.anim = true);
     // 劇本：選錯的馬一路領先、最後被正確的馬追過；選對的馬先落後、最後衝刺
     const pts = [0, .22, .45, .7, .88, 1];
+    // 每次的過程不一樣。答對：chase 先落後再追過、lead 一路領先、pack 並排到最後、stumble（反轉）中途絆倒掉到最後再奇蹟衝刺。
+    // 答錯：fade 領先被追過、never 一直在中間、duel 和冠軍並排差一點。
+    const tw = twist(k === ans), plot = tw ? 'stumble' : pick(k === ans ? ['chase', 'chase', 'lead', 'pack'] : ['fade', 'fade', 'never', 'duel']);
     const plan = opts.map((_, i) => {
       let v;
-      if (i === ans) v = [0, rnd(.16, .19), rnd(.35, .39), .6, .84, 1];
-      else if (i === k) v = [0, rnd(.23, .26), rnd(.5, .53), .76, .92, .978];
+      if (i === ans) v = plot === 'stumble' ? [0, rnd(.2, .23), .36, .47, .8, 1] : plot === 'lead' || plot === 'never' ? [0, rnd(.24, .27), rnd(.5, .53), .75, .91, 1] : plot === 'pack' || plot === 'duel' ? [0, rnd(.2, .22), rnd(.43, .46), .7, .89, 1] : [0, rnd(.16, .19), rnd(.35, .39), .6, .84, 1];
+      else if (i === k) v = plot === 'never' ? [0, rnd(.17, .2), rnd(.38, .42), .62, .82, .93] : plot === 'duel' ? [0, rnd(.2, .22), rnd(.44, .47), .71, .9, .985] : [0, rnd(.23, .26), rnd(.5, .53), .76, .92, .978];
       else { const e = rnd(.86, .95); v = [0, rnd(.18, .23), rnd(.4, .47), rnd(.6, .69), e - rnd(.05, .08), e]; }
       if (k === ans && i !== ans) { v[3] = Math.max(v[3], rnd(.68, .73)); v[4] = Math.max(v[4], .88); v[5] = Math.min(Math.max(v[5], .94), .985); }
       return v;
     });
     const posAt = (v, t) => { let s = 0; while (s < pts.length - 2 && t > pts[s + 1]) s++; const u = (t - pts[s]) / (pts[s + 1] - pts[s]); const e = u * u * (3 - 2 * u) * .5 + u * .5; return v[s] + (v[s + 1] - v[s]) * e; };
-    const FIN = 87.2; let frame = 0, lastF = 0, lastDust = 0, said = 0, zoomed = false;
+    const FIN = 87.2; let frame = 0, lastF = 0, lastDust = 0, said = 0, zoomed = false, fell = false, back = false;
     await new Promise(res => {
       const t0 = performance.now(); let virt = 0, prev = t0;
       const step = now => {
@@ -968,7 +1069,9 @@ const SIX = [
         horses.forEach((h, i) => at(h, START + posAt(plan[i], t) * (FIN - START), feet(i)));
         if (now - lastF > 90) { lastF = now; frame ^= 1; horses.forEach((h, i) => h._im.src = HORSE[i][(frame + i) % 2]); noise(.03, .1, 700); }
         if (now - lastDust > 140) { lastDust = now; horses.forEach((h, i) => puff(scene, START - 12 + posAt(plan[i], t) * (FIN - START), feet(i) - 1, 2.6, '#e0b88a', 600, -3, -1)); }
-        if (t > .35 && said === 0) { said = 1; say.textContent = `「${opts[k]}」${k === ans ? '還在後面追！' : '跑在最前面！'}`; }
+        if (t > .35 && said === 0) { said = 1; const ps = plan.map(v => posAt(v, t)), me = ps[k]; say.textContent = `「${opts[k]}」${me >= Math.max(...ps) ? '跑在最前面！' : me <= Math.min(...ps) ? '落在最後面！' : '緊緊跟著！'}`; }
+        if (plot === 'stumble' && t > .47 && !fell) { fell = true; uhoh(); say.textContent = `糟糕！「${opts[k]}」絆了一下！`; horses[k]._im.animate([{ rotate: '0deg' }, { rotate: '24deg' }, { rotate: '-8deg' }, { rotate: '0deg' }], { duration: T(700) }); puff(scene, START + posAt(plan[k], t) * (FIN - START), feet(k) - 1, 6, '#e0b88a', 800, 0, -3); }
+        if (plot === 'stumble' && t > .9 && !back) { back = true; say.textContent = `「${opts[k]}」從最後面衝上來了！`; }
         if (t > .75 && said === 1) { said = 2; say.textContent = '最後直線！難分難解！'; SFX.drum(10); }
         if (t > .86 && !zoomed) { zoomed = true; zoom(scene, 86, 60, 1.4, 600); }
         t < 1 ? requestAnimationFrame(step) : res();
@@ -1034,12 +1137,18 @@ const SIX = [
     kid.set('stand', 'scared');
     await sleep(300);
     await revealFlash(scene);
-    const ok = k === ans, top = cap.querySelector('.top'), prize = cap.querySelector('.prize');
-    prize.textContent = ok ? '⭐' : '';
-    if (ok) scene.append(el('div', 'rays'));
+    const ok = k === ans, tw = twist(ok), top = cap.querySelector('.top'), prize = cap.querySelector('.prize');
+    prize.textContent = ok && !tw ? '⭐' : '';
+    if (ok && !tw) scene.append(el('div', 'rays'));
     SFX.pop();
     top.animate([{ transform: 'none' }, { transform: 'translate(-30%,-140%) rotate(-60deg)' }], { duration: T(320), fill: 'forwards', easing: 'ease-out' });
     if (ok) {
+      if (tw) {
+        // 反轉：打開是空的，搖一搖才發現大獎卡在裡面
+        kid.set('stand', 'sad'); kid.say('空的？！', 1000); uhoh(); await sleep(1300);
+        await anim(cap, [0, 10, -10, 6, 0].map(d => ({ transform: `${base} rotate(${d}deg)` })), 420); SFX.clink(); await sleep(250);
+        prize.textContent = '⭐'; scene.append(el('div', 'rays')); kid.say('卡在裡面！', 900);
+      }
       prize.animate([{ scale: 0, translate: '-50% -50%' }, { scale: 1.2, translate: '-50% -140%' }], { duration: T(450), fill: 'forwards', easing: 'cubic-bezier(.3,1.7,.5,1)' });
       SFX.win(); confetti(scene); kid.cheer(); stamp(scene, true, '中大獎！', 16);
     } else {
@@ -1088,6 +1197,15 @@ const SIX = [
     await revealFlash(scene);
     const ok = k === ans;
     if (ok) {
+      if (twist(ok)) {
+        // 反轉：熄火後機頭歪掉、開始往下掉，掉到一半重新點火拉起來
+        const dir = k === 3 ? -1 : 1; uhoh(); puff(scene, X, GY - 23, 4, '#2a2640', 1000, 0, 2);
+        await tween(700, t => { st.a = dir * 28 * t; st.y = -24 - 1.2 * Math.sin(t * Math.PI); apply(); }, ease.in);
+        crew.say('要掉下來了！', 900);
+        await tween(650, t => { st.y = -24 + 12 * t * t; st.a = dir * (28 + 30 * t); apply(); if (Math.random() < .4) puff(scene, X + st.x, GY - 6 + st.y, 4, '#6b6880', 900, rnd(-1, 1), -3); });
+        SFX.whoosh(); fire.style.height = U(8); tone(300, .5, 'sawtooth', .06, 0, 900);
+        await tween(600, t => { const e = ease.out(t); st.a = dir * 58 * (1 - e); st.y = -12 - 12 * e; apply(); });
+      }
       fire.style.height = U(16); fire.style.width = U(5.4); scene.classList.add('warp'); for (let i = 0; i < 30; i++) { const s = el('span', 'star'); s.style.left = rnd(0, 100).toFixed(1) + '%'; s.style.top = rnd(0, 80).toFixed(1) + '%'; s.style.animationDelay = -rnd(0, .35).toFixed(2) + 's'; scene.prepend(s); } SFX.whoosh(); tone(200, 1.2, 'sawtooth', .05, 0, 1400);
       crew.cheer();
       await tween(1000, t => { st.y = -24 - 80 * t; apply(); if (Math.random() < .5) puff(scene, X + rnd(-1, 1), GY - 6 + st.y + 12, 3, '#ffd166', 500, 0, 3); }, ease.in);
@@ -1167,14 +1285,23 @@ const SIX = [
     await tween(300, t => { tip.x = 31 - 2 * t; tip.y = 1.5 + 5 * t; rod.setAttribute('x2', tip.x); rod.setAttribute('y2', tip.y); ln.setAttribute('d', `M${tip.x} ${tip.y} L ${hx} ${W}`); });
     await sleep(400);
     await revealFlash(scene);
-    const ok = k === ans;
+    const ok = k === ans, tw = twist(ok), boot = !ok || tw;   // 反轉時先釣起舊鞋子
     sh[k].remove(); hk.setAttribute('d', ''); ln2.setAttribute('d', '');
-    const cw = ok ? 16 : 10, chh = ok ? 6.9 : 7.1;
-    const c = pimg(ok ? FISH : BOOT, cw, chh); const cWrap = el('div', 'catch'); cWrap.append(c); at(cWrap, hx, hy); scene.append(cWrap);
+    const cw = boot ? 10 : 16, chh = boot ? 7.1 : 6.9;
+    let c = pimg(boot ? BOOT : FISH, cw, chh); const cWrap = el('div', 'catch'); cWrap.append(c); at(cWrap, hx, hy); scene.append(cWrap);
     for (let i = 0; i < 10; i++) { const d = at(el('div', 'drop'), hx + rnd(-4, 4), W); scene.append(d); d.animate([{ transform: 'none' }, { transform: `translate(${rnd(-10, 10)}cqw, -${rnd(8, 16)}cqw)`, offset: .5 }, { transform: `translate(${rnd(-14, 14)}cqw, 2cqw)`, opacity: 0 }], { duration: T(900), fill: 'forwards' }); }
     SFX.splash();
     await tween(800, t => { const y = hy + (6 - hy) * t; at(cWrap, hx, y); tip.y = 6.5 - 4 * t; tip.x = 29 + 2 * t; rod.setAttribute('x2', tip.x); rod.setAttribute('y2', tip.y); ln.setAttribute('d', `M${tip.x} ${tip.y} L ${hx} ${y}`); }, ease.out);
     cWrap.animate([{ rotate: '-12deg' }, { rotate: '12deg' }], { duration: T(300), iterations: 6, direction: 'alternate', easing: 'ease-in-out' });
+    if (tw) {
+      // 反轉：釣起來是舊鞋子，結果大魚咬著鞋子跟著跳出水面
+      fisher.set('stand', 'sad'); fisher.say('舊鞋子？', 1100); uhoh(); await sleep(1400);
+      const f2 = el('div', 'catch'); c = pimg(FISH, 16, 6.9); f2.append(c); at(f2, hx, W + 6); scene.append(f2); SFX.splash();
+      for (let i = 0; i < 10; i++) { const d = at(el('div', 'drop'), hx + rnd(-4, 4), W); scene.append(d); d.animate([{ transform: 'none' }, { transform: `translate(${rnd(-10, 10)}cqw, -${rnd(8, 16)}cqw)`, offset: .5 }, { transform: `translate(${rnd(-14, 14)}cqw, 2cqw)`, opacity: 0 }], { duration: T(900), fill: 'forwards' }); }
+      await tween(500, t => at(f2, hx, W + 6 + (12.4 - W - 6) * ease.out(t)));
+      f2.animate([{ rotate: '-8deg' }, { rotate: '8deg' }], { duration: T(300), iterations: 6, direction: 'alternate', easing: 'ease-in-out' });
+      fisher.say('大魚咬著鞋子！', 1200);
+    }
     if (ok) { c.style.filter = 'drop-shadow(0 0 1.4cqw #ffd166)'; SFX.win(); confetti(scene); fisher.cheer(); stamp(scene, true, '大魚上鉤！'); }
     else { SFX.lose(); fisher.sad(); fisher.say('舊鞋子？', 1600); await sleep(500); stamp(scene, false, '釣到舊鞋子…'); }
     return { ok, k };
@@ -1256,6 +1383,13 @@ const SIX = [
     await revealFlash(scene);
     const ok = k === ans;
     if (ok) {
+      if (twist(ok)) {
+        // 反轉：怪獸先回了一些血、還變大，結果只是逞強，慢半拍才倒下
+        hp.classList.add('heal'); hp.style.width = '45%'; uhoh(); tone(200, .6, 'sawtooth', .07, 0, 90);
+        for (let i = 0; i < 5; i++) { const h = at(el('div', 'heart', '+'), MX + rnd(-10, 10), MY + rnd(-6, 10)); scene.append(h); anim(h, [{ transform: 'none', opacity: 1 }, { transform: 'translateY(-10cqw)', opacity: 0 }], 1000).then(() => h.remove()); }
+        note(scene, '怪獸回血了？！'); await anim(monster, [{ scale: 1 }, { scale: 1.15 }, { scale: 1.08 }], 700); await sleep(800);
+        hp.classList.remove('heal'); note(scene, '……牠只是在逞強！'); await anim(monster, [{ scale: 1.08, rotate: '0deg' }, { scale: 1, rotate: '-6deg' }, { scale: 1, rotate: '6deg' }, { scale: 1, rotate: '0deg' }], 800); unnote(scene);
+      }
       flash(scene); noise(.5, .5, 2000); hp.style.width = '0%';
       debris(scene, MX, MY, 20, ['#fff3c4', '#ffd166', '#b79cff']);
       await anim(monster, [{ transform: 'none', opacity: 1 }, { transform: 'translate(4cqw, -3cqw) rotate(15deg)', offset: .3 }, { transform: 'translate(40cqw, -40cqw) rotate(540deg) scale(.2)', opacity: 0 }], 1000, { easing: 'ease-in' });

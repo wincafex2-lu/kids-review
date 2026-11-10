@@ -51,6 +51,13 @@ const CHASE = { id: 'chase', name: '🛒 追趕怪獸', how: '小怪獸偷走寶
     await revealFlash(scene);
     const ok = k === ans;
     if (ok) {
+      if (twist(ok)) {
+        // 反轉：眼看要追上，車子突然熄火往後退，重新發動才追上
+        bob.pause(); SFX.sputter(); uhoh(); kid.say('熄火了？！', 1000);
+        await tween(900, t => { scroll(1.2 * (1 - t)); place(42 - 14 * ease.out(t)); at(mon, 78 + 12 * t, RAIL - 10.4); });
+        await sleep(400); bob.play(); SFX.whoosh(); kid.say('再衝一次！', 800);
+        await tween(650, t => { scroll(2.6); place(28 + 14 * ease.in(t)); at(mon, 90 - 12 * t, RAIL - 10.4); });
+      }
       await tween(500, t => { scroll(2.2); place(42 + 18 * t); });
       bob.cancel(); run1.cancel(); SFX.clink();
       // 一把抓回寶石袋，小怪獸跌倒
