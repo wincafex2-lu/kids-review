@@ -859,7 +859,9 @@ const SIX = [
     let svg = '<svg class="ov" viewBox="0 0 100 62.5" aria-hidden="true"><path id="fuse" d="M20 15 C 22 9, 27 11, 28 6" stroke="#c9b48a" stroke-width="1" fill="none" stroke-dasharray="14" stroke-dashoffset="0"/>';
     ys.forEach((y, i) => {
       const by = BY - 3 + i * 2.4;
-      svg += `<g data-w="${i}"><path class="wire" data-h="l" stroke="${cols[i]}" d="M30 ${by} C 44 ${by}, 44 ${y}, 62 ${y}"/><path class="wire" data-h="r" stroke="${cols[i]}" d="M62 ${y} L 91 ${y}"/></g>`;
+      // 每條線疊四層：黑框、暗面、本色、亮線，看起來才像有厚度的電線。剪斷時只改 defs 裡的路徑，四層會一起動
+      const c = cols[i], lay = h => `<use href="#w${i}${h}" class="wire wo"/><use href="#w${i}${h}" class="wire" stroke="${ART.mix(c, '#000000', .38)}"/><use href="#w${i}${h}" class="wire wm" stroke="${c}"/><use href="#w${i}${h}" class="wire wh" stroke="${ART.mix(c, '#ffffff', .6)}"/>`;
+      svg += `<g data-w="${i}"><defs><path id="w${i}l" data-h="l" d="M30 ${by} C 44 ${by}, 44 ${y}, 62 ${y}"/><path id="w${i}r" data-h="r" d="M62 ${y} L 91 ${y}"/></defs>${lay('l')}${lay('r')}</g>`;
     });
     svg += '</svg>';
     scene.innerHTML = `<img class="px board" alt="" src="${ART.SP.board}">${svg}<div class="bomb"><img class="px" alt="" src="${ART.SP.bomb}"><span class="led"></span><span class="lcd">0:30</span></div>`;
