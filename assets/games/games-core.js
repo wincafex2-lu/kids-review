@@ -99,8 +99,14 @@ class Actor {
   async walkTo(x, ms, back = 'stand') { const x0 = this.x; this.set(x > x0 ? 'right' : 'left', this.face, true); await tween(ms, t => this.move(x0 + (x - x0) * t, this.y)); this.set(back); }
   hop(n = 3, h = 2) { return anim(this.e, Array.from({ length: n * 2 + 1 }, (_, i) => ({ transform: `translateY(${i % 2 ? -h : 0}cqw)` })), 260 * n, { fill: 'none' }); }
   say(text, ms = 1400) { const b = at(el('div', 'bubble', esc(text)), this.x, this.y - 20 * this.s - 1); const par = this.e.parentNode; par.append(b);
-    // 靠近畫面邊緣時把對話框推回畫面裡，尖角仍指著說話的人
-    if (par.classList.contains('scene') && par.clientWidth) { const w = b.offsetWidth / par.clientWidth * 100, x = Math.max(w / 2 + .6, Math.min(99.4 - w / 2, this.x)); if (x !== this.x) { b.style.left = U(x); b.style.setProperty('--tail', U(this.x - x)); } }
+    // 靠近畫面邊緣時把對話框推回畫面裡，尖角仍指著說話的人；頭頂放不下（人站在畫面最上面）就改放在頭的旁邊
+    if (par.classList.contains('scene') && par.clientWidth) {
+      const k = 100 / par.clientWidth, w = b.offsetWidth * k, h = b.offsetHeight * k, top = this.y - 20 * this.s - 1;
+      if (top - h < .6) {
+        const right = this.x + 9 * this.s + w + 2 < 99.4 || this.x < 50, x = right ? this.x + 9 * this.s + 1.6 + w / 2 : this.x - 9 * this.s - 1.6 - w / 2;
+        b.classList.add(right ? 'tail-l' : 'tail-r'); b.style.left = U(Math.max(w / 2 + .6, Math.min(99.4 - w / 2, x))); b.style.top = U(Math.max(h + .6, this.y - 12 * this.s + h / 2));
+      } else { const x = Math.max(w / 2 + .6, Math.min(99.4 - w / 2, this.x)); if (x !== this.x) { b.style.left = U(x); b.style.setProperty('--tail', U(this.x - x)); } }
+    }
     if (ms) setTimeout(() => b.remove(), T(ms)); return b; }
   async cheer() { this.set('cheer', 'happy', true); await this.hop(3, 2.4); }
   async sad() { this.set('stand', 'sad'); await anim(this.e, [{ transform: 'none' }, { transform: 'translateY(.6cqw) scaleY(.94)' }], 300); }
@@ -108,40 +114,13 @@ class Actor {
 Actor.all = new Set();
 setInterval(() => Actor.all.forEach(a => { if (!a.e.isConnected) return Actor.all.delete(a); if (a.anim) { a.f ^= 1; a.render(); } }), 180);
 
-/* ---------- 音效（即時合成） ---------- */
-let AC = null, muted = store.get('kr-reveal-mute', false);
-const ac = () => { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch {} } if (AC && AC.state === 'suspended') AC.resume(); return AC; };
-function tone(f, d = .08, type = 'square', v = .05, delay = 0, f2) {
-  const c = ac(); if (!c || muted) return;
-  const t = c.currentTime + delay / 1000, o = c.createOscillator(), g = c.createGain();
-  o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
-  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
-  o.connect(g).connect(c.destination); o.start(t); o.stop(t + d + .02);
-}
-function noise(d = .4, v = .25, freq = 900, delay = 0) {
-  const c = ac(); if (!c || muted) return;
-  const t = c.currentTime + delay / 1000, n = Math.floor(c.sampleRate * d), b = c.createBuffer(1, n, c.sampleRate), ch = b.getChannelData(0);
-  for (let i = 0; i < n; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / n);
-  const s = c.createBufferSource(), fl = c.createBiquadFilter(), g = c.createGain();
-  s.buffer = b; fl.type = 'lowpass'; fl.frequency.value = freq; g.gain.value = v;
-  s.connect(fl).connect(g).connect(c.destination); s.start(t);
-}
-const SFX = {
-  tick: () => tone(1200, .04, 'square', .04),
-  snip: () => { tone(2400, .03, 'square', .05); tone(1600, .05, 'square', .05, 40); },
-  drum: n => { for (let i = 0; i < n; i++) noise(.06, .1 + i / n * .2, 500, i * 55); },
-  win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, .18, 'square', .05, i * 110)),
-  lose: () => [392, 330, 262].forEach((f, i) => tone(f, .25, 'triangle', .08, i * 180)),
-  boom: () => { noise(1.2, .6, 380); tone(90, .7, 'sawtooth', .12, 0, 30); },
-  whoosh: () => noise(.6, .2, 2400),
-  click: () => tone(300, .05, 'square', .06),
-  clink: () => { tone(2600, .08, 'sine', .07); tone(3400, .12, 'sine', .05, 60); },
-  pop: () => tone(500, .12, 'sine', .1, 0, 1200),
-  splash: () => noise(.35, .25, 1600),
-  sputter: () => { for (let i = 0; i < 6; i++) noise(.05, .2, 300, i * 90); },
-  beat: () => { tone(70, .12, 'sine', .25); tone(60, .12, 'sine', .2, 160); },
-  reveal: () => { tone(800, .5, 'sine', .06, 0, 2400); noise(.5, .12, 6000); },
-};
+/* ---------- 音效（即時合成，引擎在 assets/sfx.js） ---------- */
+const KS = window.KRSFX; let muted = store.get('kr-reveal-mute', false);
+const ac = () => KS.ctx();
+// 這裡的 delay 單位是毫秒（引擎用秒）
+const tone = (f, d = .08, type = 'square', v = .05, delay = 0, f2) => { if (!muted) KS.tone(f, d, type, v, delay / 1000, f2); };
+const noise = (d = .4, v = .25, freq = 900, delay = 0) => { if (!muted) KS.noise(d, v, freq, delay / 1000); };
+const SFX = Object.fromEntries(Object.entries(KS.lib).map(([k, fn]) => [k, (...a) => { if (!muted) fn(...a); }]));
 $('#mute').onclick = () => { muted = !muted; store.set('kr-reveal-mute', muted); $('#mute').textContent = muted ? '🔇' : '🔊'; $('#mute').setAttribute('aria-pressed', muted); };
 $('#mute').textContent = muted ? '🔇' : '🔊';
 
@@ -191,16 +170,16 @@ function zoom(scene, ox, oy, s, ms) { scene.style.transformOrigin = `${ox}% ${oy
    只在答對時出現，所以結果不會騙人。window.KR_TWIST = true／false 可以強制開或關（測試用）。 */
 let twistGap = 9;
 function twist(ok) {
-  twistGap++;
+  twistGap++; KS.setBig(false);
   if (!ok) return false;
   const on = window.KR_TWIST != null ? !!window.KR_TWIST : twistGap > 1 && Math.random() < .3;
-  if (on) twistGap = 0;
+  if (on) { twistGap = 0; KS.setBig(true); } // 逆轉成功時，答對的音樂換成更熱鬧的版本
   return on;
 }
 // 畫面下方的旁白條（再叫一次就換字；unnote 拿掉）
 function note(scene, text) { let b = scene.querySelector('.commentary'); if (!b) { b = el('div', 'commentary'); scene.append(b); } b.hidden = false; b.textContent = text; return b; }
 const unnote = scene => scene.querySelector('.commentary')?.remove();
-const uhoh = () => { tone(330, .18, 'square', .05); tone(220, .3, 'square', .05, 160); };
+const uhoh = () => SFX.uhoh();
 
 /* ======================================================================
    遊戲：play(scene, opts, ans) 先等小朋友選，播動畫，閃光後才揭曉

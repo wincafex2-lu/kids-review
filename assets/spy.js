@@ -204,53 +204,41 @@ $('#sun').src = (() => { const m = []; for (let y = 0; y < 12; y++) { let r = ''
 })();
 $('#logo').src = SPR.spy;
 
-/* ---------- 音效 ---------- */
-let actx = null, muted = false;
-function ac() { if (muted) return null; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); return actx; } catch { return null; } }
-function tone(f, d, type = 'square', v = .06, delay = 0, f2) {
-  const a = ac(); if (!a) return;
-  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + delay;
-  o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
-  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
-  o.connect(g).connect(a.destination); o.start(t); o.stop(t + d + .02);
-}
-function noise(d, v = .25, freq = 900) {
-  const a = ac(); if (!a) return;
-  const b = a.createBuffer(1, a.sampleRate * d, a.sampleRate), ch = b.getChannelData(0);
-  for (let i = 0; i < ch.length; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / ch.length) ** 2;
-  const s = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter();
-  f.type = 'lowpass'; f.frequency.value = freq; s.buffer = b; g.gain.value = v;
-  s.connect(f).connect(g).connect(a.destination); s.start();
-}
+/* ---------- 音效（引擎在 assets/sfx.js，時間單位是秒） ---------- */
+const KS = window.KRSFX; let muted = false;
+const tone = (f, d, type = 'square', v = .06, delay = 0, f2, o) => { if (!muted) KS.tone(f, d, type, v, delay, f2, o); };
+const noise = (d, v = .25, freq = 900, delay = 0, o) => { if (!muted) KS.noise(d, v, freq, delay, o); };
+const lib = k => (...a) => { if (!muted) KS.lib[k](...a); };
+const bell = (...a) => { if (!muted) KS.bell(...a); }, thud = (...a) => { if (!muted) KS.thud(...a); };
 const SFX = {
-  lock: () => { tone(1400, .06, 'square', .04); tone(1400, .06, 'square', .04, .12); tone(1800, .1, 'square', .04, .24); },
-  tick: () => tone(1100, .03, 'square', .03),
-  go: () => [660, 990].forEach((f, i) => tone(f, .1, 'square', .05, i * .08)),
-  whistle: () => tone(1600, .65, 'sine', .06, 0, 250),
-  boom: () => { noise(.6); tone(90, .4, 'square', .08, 0, 40); },
-  run: () => { for (let i = 0; i < 7; i++) tone(180 + (i % 2) * 40, .04, 'square', .04, i * .1); },
-  kick: () => { noise(.15, .35, 2000); tone(220, .14, 'square', .08, 0, 70); },
-  siren: n => { for (let i = 0; i < n; i++) tone(i % 2 ? 880 : 660, .3, 'square', .03, i * .3); },
-  ufo: () => { for (let i = 0; i < 10; i++) tone(420 + (i % 2) * 260, .09, 'sine', .05, i * .09); },
-  beam: () => tone(200, 1.1, 'sawtooth', .025, 0, 1200),
-  motor: () => tone(110, .9, 'sawtooth', .025, 0, 140),
+  lock: () => { tone(1320, .07, 'square', .04); tone(1320, .07, 'square', .04, .12); tone(1760, .18, 'square', .05, .24); bell(3520, .2, .02, .24); },
+  tick: lib('tick'),
+  go: () => { [660, 990].forEach((f, i) => tone(f, .1, 'square', .05, i * .08)); bell(1980, .25, .03, .16); },
+  whistle: () => tone(1700, .7, 'sine', .07, 0, 260, { a: .12, hold: .7 }),
+  boom: lib('boom'),
+  run: () => { for (let i = 0; i < 7; i++) { thud(150 + (i % 2) * 30, .06, .1, i * .1); } },
+  kick: () => { noise(.12, .2, 2200, 0, { type: 'bandpass' }); thud(200, .16, .15); },
+  siren: n => { for (let i = 0; i < n; i++) tone(i % 2 ? 900 : 620, .3, 'square', .03, i * .3, i % 2 ? 620 : 900, { a: .03, hold: .8 }); },
+  ufo: () => { for (let i = 0; i < 10; i++) tone(420 + (i % 2) * 260, .1, 'sine', .05, i * .09, 520 + (i % 2) * 260); },
+  beam: () => { tone(200, 1.1, 'sawtooth', .025, 0, 1200, { a: .1, hold: .7 }); tone(400, 1.1, 'sine', .02, 0, 2400, { a: .1, hold: .7 }); },
+  motor: () => tone(110, .9, 'sawtooth', .03, 0, 140, { a: .05, hold: .8 }),
   clack: () => { tone(1500, .04, 'square', .05); noise(.06, .2, 3000); },
-  drop: () => tone(800, .7, 'triangle', .07, 0, 80),
+  drop: () => tone(800, .7, 'triangle', .07, 0, 80, { hold: .6 }),
   boing: () => { tone(140, .35, 'square', .06, 0, 900); tone(300, .2, 'triangle', .05, .1, 1200); },
   screech: () => { tone(1900, .3, 'sawtooth', .035, 0, 900); tone(2100, .25, 'sawtooth', .03, .3, 1100); },
-  flap: () => { for (let i = 0; i < 5; i++) noise(.06, .12, 600); },
-  sad: () => [392, 370, 349, 294].forEach((f, i) => tone(f, .28, 'triangle', .08, i * .25)),
-  laugh: () => [700, 600, 700, 600, 700].forEach((f, i) => tone(f, .07, 'square', .04, i * .09)),
-  win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, .16, 'triangle', .08, i * .1)),
-  hum: () => { tone(70, 1, 'square', .05, 0, 90); tone(140, 1, 'sine', .03); },
+  flap: () => { for (let i = 0; i < 5; i++) noise(.07, .14, 700, i * .11, { type: 'bandpass', q: .6 }); },
+  sad: lib('lose'),
+  laugh: () => [760, 680, 760, 680, 620].forEach((f, i) => tone(f, .08, 'square', .05, i * .1, f * .82)),
+  win: lib('win'),
+  hum: () => { tone(70, 1, 'square', .05, 0, 90, { a: .1, hold: .8 }); tone(140, 1, 'sine', .03, 0, 0, { a: .1, hold: .8 }); },
   zap: () => { tone(1200, .12, 'square', .05, 0, 300); tone(900, .1, 'square', .04, .1, 200); },
-  suck: () => { noise(1.2, .2, 500); tone(300, 1.1, 'sawtooth', .03, 0, 1400); },
-  sputter: () => { for (let i = 0; i < 4; i++) noise(.08, .25, 300); },
-  swoosh: () => noise(.25, .25, 1800),
-  slam: () => { noise(.2, .4, 400); tone(120, .2, 'square', .08, 0, 60); },
-  pop: () => { tone(1800, .05, 'square', .06, 0, 600); noise(.05, .2, 4000); },
-  blow: () => { for (let i = 0; i < 6; i++) tone(900 + i * 120, .06, 'sine', .04, i * .08, 1400 + i * 120); },
-  warp: () => { tone(200, .9, 'sine', .07, 0, 1500); tone(1500, .6, 'triangle', .04, .3, 150); },
+  suck: () => { noise(1.2, .22, 400, 0, { type: 'bandpass', f2: 2400, curve: .6 }); tone(300, 1.1, 'sawtooth', .03, 0, 1400, { a: .1, hold: .7 }); },
+  sputter: lib('sputter'),
+  swoosh: () => noise(.25, .25, 700, 0, { type: 'bandpass', f2: 3200, curve: .8 }),
+  slam: () => { noise(.2, .25, 500); thud(120, .22, .18); },
+  pop: () => { tone(900, .07, 'sine', .1, 0, 1900); noise(.04, .12, 4000); },
+  blow: () => { for (let i = 0; i < 6; i++) tone(900 + i * 120, .07, 'sine', .04, i * .08, 1400 + i * 120); },
+  warp: () => { tone(200, .9, 'sine', .07, 0, 1500, { a: .05 }); tone(1500, .6, 'triangle', .04, .3, 150); },
   jump: () => tone(300, .2, 'square', .05, 0, 900),
 };
 $('#mute').addEventListener('click', e => { muted = !muted; e.currentTarget.textContent = muted ? '🔇' : '🔊'; e.currentTarget.setAttribute('aria-pressed', String(muted)); });
@@ -779,10 +767,10 @@ function startQuestion() {
    只在抓對時出現，所以結果不會騙人。window.KR_TWIST = true／false 可以強制開或關（測試用）。 */
 let twistGap = 9;
 function twist(hit) {
-  twistGap++;
+  twistGap++; KS.setBig(false);
   if (!hit) return false;
   const on = window.KR_TWIST != null ? !!window.KR_TWIST : twistGap > 1 && Math.random() < .3;
-  if (on) twistGap = 0;
+  if (on) { twistGap = 0; KS.setBig(true); } // 逆轉成功時，過關的音樂換成更熱鬧的版本
   return on;
 }
 async function dodge(el) {
