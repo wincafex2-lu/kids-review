@@ -2,6 +2,10 @@
 // 人物精緻版：把 16×20 的人物放大成 32×40，頭的邊角修圓，眼睛加大加反光，加腮紅、嘴巴，瀏海和衣服加一階陰影。
 // 頭的黑框 2 像素粗，身體和手腳的黑框收成 1 像素（不然手腳只剩一團黑）。plainFace = 沒有套表情時才畫小嘴巴
 window.PEOPLE_HD = function (rows, colors, plainFace) {
+  // 走路時抬起來的那隻腳，原圖是兩格高的一塊黑；放大後變成一大塊黑，所以上面那格補回腿的顏色（看得出是腳縮起來）
+  for (const x0 of [4, 9]) if (rows[17] && rows[17].slice(x0, x0 + 3) === 'KKK' && rows[18].slice(x0, x0 + 3) === 'KKK' && rows[19].slice(x0, x0 + 3) === '...' && !'K.'.includes(rows[17][14 - x0])) {
+    rows = rows.slice(); rows[17] = rows[17].slice(0, x0 + 1) + rows[17][14 - x0] + rows[17].slice(x0 + 2);
+  }
   const W = 16, H = 20, g0 = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? '.' : rows[y][x];
   const G = Array.from({ length: H * 2 }, () => Array(W * 2).fill('.'));
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -12,20 +16,39 @@ window.PEOPLE_HD = function (rows, colors, plainFace) {
     G[y * 2 + 1][x * 2] = (D === C && D !== B && C !== A && ok(C)) ? C : P; G[y * 2 + 1][x * 2 + 1] = (B === D && B !== A && D !== C && ok(D)) ? D : P;
   }
   const at2 = (x, y) => (G[y] && G[y][x]) || '.', skin = c => c === 'S' || c === 's', put = (x, y, c) => { if (G[y] && x >= 0 && x < W * 2) G[y][x] = c; };
-  // 身體的黑框收細：頭以下的黑框從 2 像素收成 1 像素，讓出來的地方補上旁邊的顏色，
-  // 手、腳這種只有 1 格寬的地方才不會被黑框蓋住，看起來一團黑
-  // 頭的黑框維持 2 像素；舉手時手臂會伸到頭旁邊，那一段只處理衣服顏色和最外側的手
-  const ink = c => c === 'K', cloth = c => 'CcQqPp'.includes(c);
-  const fill = (c, x, y) => c !== 'K' && c !== '.' && (y >= 24 || cloth(c) || (c === 'S' && (x < 6 || x > 25)));
-  for (const [dx, dy] of [[1, 0], [0, 1]]) {
-    const S0 = G.map(r => r.slice()), s = (x, y) => (S0[y] && S0[y][x]) || '.';
-    for (let y = 0; y < H * 2; y++) for (let x = 0; x < W * 2; x++) {
-      if (!ink(s(x, y))) continue;
-      const a = s(x - dx, y - dy), b = s(x + dx, y + dy);
-      if (fill(a, x, y) && ink(b)) G[y][x] = a;                                    // 左／上是顏色：往右／下長一格
-      else if (fill(b, x, y) && ink(a) && s(x - 2 * dx, y - 2 * dy) === '.') G[y][x] = b; // 最外圈的左／上黑框：往外長一格
+  // 身體的黑框收細：原圖每個黑格放大後是 2×2，靠著顏色的那一半讓給顏色，另一半留黑，
+  // 所以頭以下的黑線都只剩 1 像素，手、腳這種只有 1 格寬的地方才不會被黑框蓋成一團黑。
+  // 頭的黑框維持 2 像素；舉手時手臂會伸到頭旁邊，那一段只算衣服顏色和最外側的手。
+  const cloth = c => 'CcQqPp'.includes(c), isCol = c => c !== 'K' && c !== '.';
+  const tint = (x, y) => { const c = g0(x, y); return c !== 'K' && c !== '.' && (y >= 12 || cloth(c) || (c === 'S' && (x < 3 || x > 12))) ? c : ''; };
+  const pure = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (g0(x, y) !== 'K') continue;
+    const L = tint(x - 1, y), R = tint(x + 1, y), U = tint(x, y - 1), D = tint(x, y + 1), h = ['', ''], v = ['', ''];
+    if (!L && !R && !U && !D) { pure.push([x, y]); continue; }   // 四邊都沒有顏色：轉角，等一下再處理
+    if (L && R && U && D) continue;                              // 四邊都是顏色：衣服上的鈕扣這類小點，保留原樣
+    if (L && R) { if (x < 8) { h[0] = 'k'; h[1] = R; } else { h[0] = L; h[1] = 'k'; } }   // 兩邊都是顏色（手臂和身體中間那條線）：黑線留在外側那一半
+    else if (L) { h[0] = L; h[1] = 'k'; } else if (R) { h[0] = 'k'; h[1] = R; }
+    // 橫線：身體的線（衣服下襬、手的下緣）黑色留在下半格，整條才會一樣高；下巴那條線黑色留在上半格，和頭的黑框接在一起
+    if (y >= 12 ? U : !D && U) { v[0] = U; v[1] = 'k'; } else if (D) { v[0] = 'k'; v[1] = D; }
+    for (let sy = 0; sy < 2; sy++) for (let sx = 0; sx < 2; sx++) {
+      const a = h[sx], b = v[sy], c = a === 'k' || b === 'k' ? '' : a || b;
+      if (c) G[y * 2 + sy][x * 2 + sx] = c;
     }
   }
+  // 轉角的黑格：旁邊兩條線都讓出半格的那一小格跟著讓；完全碰不到顏色的黑色（線疊在一起多出來的）拿掉
+  const fill = [], drop = [];
+  for (const [x, y] of pure) for (let sy = 0; sy < 2; sy++) for (let sx = 0; sx < 2; sx++) {
+    const hx = x * 2 + sx, hy = y * 2 + sy, dx = sx ? 1 : -1, dy = sy ? 1 : -1, a = at2(hx + dx, hy), b = at2(hx, hy + dy);
+    if (g0(x + dx, y) === 'K' && g0(x, y + dy) === 'K' && isCol(a) && isCol(b)) fill.push([hx, hy, a]);
+  }
+  fill.forEach(([x, y, c]) => put(x, y, c));
+  for (const [x, y] of pure) if (y >= 11) for (let sy = 0; sy < 2; sy++) for (let sx = 0; sx < 2; sx++) {
+    const hx = x * 2 + sx, hy = y * 2 + sy; if (at2(hx, hy) !== 'K') continue;
+    let near = false; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if (isCol(at2(hx + i, hy + j))) near = true;
+    if (!near) drop.push([hx, hy]);
+  }
+  drop.forEach(([x, y]) => put(x, y, '.'));
   const rgb = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)), mixc = (a, b, t) => { const A = rgb(a), B = rgb(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); }, col = Object.assign({}, colors);
   col['1'] = mixc(col.S, '#ec6a78', .45); col['2'] = mixc(col.S, '#5a2a2a', .45); col['3'] = mixc(col.C || '#888888', '#000000', .22); col['4'] = mixc(col.P || '#555555', '#000000', .25); col['5'] = mixc(col.S, col.s || '#000000', .7);
   // 陰影：瀏海或帽子正下方的皮膚、衣服和褲子靠右下黑框的一排
@@ -33,7 +56,7 @@ window.PEOPLE_HD = function (rows, colors, plainFace) {
     const c = G[y][x], up = at2(x, y - 1), rt = at2(x + 1, y), dn = at2(x, y + 1);
     if (c === 'S' && y < 16 && up !== 'S' && up !== 's' && up !== '5' && up !== '.') put(x, y, '5');
     else if (c === 'S' && rt === 'K' && y < 22) put(x, y, '5');
-    else if (c === 'C' && (rt === 'K' || dn === 'K')) put(x, y, '3');
+    else if (c === 'C' && ((rt === 'K' && !'K.'.includes(at2(x - 4, y))) || dn === 'K')) put(x, y, '3'); // 手臂那種只有 4 格寬的地方不加陰影，不然整條都暗掉
     else if (c === 'P' && (rt === 'K' || dn === 'K')) put(x, y, '4');
   }
   // 眼睛：臉上單獨一點的黑點，放大成 2×3 並加一點反光，外側加腮紅
