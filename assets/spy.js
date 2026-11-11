@@ -324,7 +324,7 @@ const METHODS = [
     if (hit) { const g = lift(el); toSpy(g); say(t.cx, t.y - 17 * p, '哇啊啊——！'); await flyOff(g, -1); }
     else { el.classList.add('soot', 'dizzy'); say(t.cx, t.y - 17 * p, '咳咳…我是好人啦！'); await wait(1400); el.classList.remove('soot', 'dizzy'); }
   } },
-  { key: 'kick', name: '飛踢高手', icon: SPR.kick, async run(el, hit) {
+  { key: 'kick', name: '飛踢高手', icon: SPR.kick.R, async run(el, hit) {
     const p = PX(), t = imgBox(el), W = stage.clientWidth;
     el.classList.remove('locked');
     // 目標太靠左就從右邊跑進來（整個人左右翻轉）
