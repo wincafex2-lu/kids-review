@@ -58,7 +58,7 @@ button:focus-visible { outline: 3px solid var(--hot); outline-offset: 3px }
 .guy, .slot { position: relative; isolation: isolate; display: flex; flex-direction: column; align-items: center; width: calc(16 * var(--px)); background: none; border: 0; padding: 0 }
 .guy img { display: block; width: calc(16 * var(--px)); height: calc(20 * var(--px)); image-rendering: pixelated }
 .sign { position: relative; z-index: 1; display: grid; place-items: center; width: calc(15 * var(--px)); height: calc(13 * var(--px)); background: var(--paper); border: 3px solid var(--ink); font-weight: 900; font-size: calc(9 * var(--px)); line-height: 1; box-shadow: inset 0 -4px 0 #eadfc4 }
-.sign { margin-bottom: 0 }   /* 木桿畫在人物圖的最上面一列，牌子要貼著圖才接得起來 */
+.sign { margin-bottom: calc(2 * var(--px)) }
 .guy.cheer { animation: cheer .36s steps(2) 4 !important }
 @keyframes cheer { 50% { transform: translateY(calc(-4 * var(--px))) } }
 .shadow { position: absolute; z-index: -1; left: 50%; bottom: calc(-1 * var(--px)); width: calc(13 * var(--px)); height: calc(3 * var(--px)); transform: translateX(-50%); background: rgba(20,40,10,.22); border-radius: 50% }
