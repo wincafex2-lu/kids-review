@@ -23,119 +23,38 @@ function rects(w, h, list) {
   for (const [col, x, y, rw, rh] of list) { g.fillStyle = col; g.fillRect(x, y, rw, rh); }
   return c.toDataURL();
 }
-/* 小人：用「Agent 辦公室」的新點陣人物（OFFICE_PEOPLE：身體、髮型、衣服、配件分層組合，
-   有走路、舉手、思考、慶祝等動作）。舉牌用「慶祝」的雙手高舉姿勢，候補用「舉手」。 */
-const PP = window.OFFICE_PEOPLE, PS = window.PEOPLE_SPRITES;
+/* 小人：大頭點陣人物（畫法在 assets/people/chibi.js）。隊員由座號決定長相，每個人舉著一根木桿，牌子接在桿子上。 */
+const PP = window.CHIBI;
 const PAL = { K: '#0d0a16', Q: '#b7bec9', Y: '#ffcc4d', M: '#a59fbf', E: '#6e4a2a', f: '#2b2440', B: '#8f4b2a', H: '#f3f5f7', W: '#ffffff' };
-function layers(person, action, i, prop) {
-  const rows = Array.from({ length: 20 }, () => Array(16).fill('.'));
-  const stack = [['body', person.body], ['bottom', person.bottom], [person.body === 'female' ? 'top-female' : 'top', person.top], ['hair', person.hair], ['accessory', person.accessory]];
-  if (prop) stack.push(['prop', 'action']);
-  for (const [layer, kind] of stack) {
-    const px = PS.parts[layer][kind][action][i];
-    for (let y = 0; y < 20; y++) for (let x = 0; x < 16; x++) if (px[y][x] !== '.') rows[y][x] = px[y][x];
-  }
-  return rows.map(r => r.join(''));
-}
-// 站姿：走路圖第 0 格是一前一後的步伐，把左腳（第 4–6 欄）鏡射到右腳，變成兩腳並排站好
-function standLegs(rows) {
-  return rows.map((r, y) => y < 17 ? r : r.slice(0, 9) + [...r.slice(4, 7)].reverse().join('') + r.slice(12));
-}
-const palOf = (person, extra) => Object.assign({}, PP.frame(person, 'walk-down', 0).palette, extra);
-const cache = new Map();
-function look(key, person, action, i = 0, opt = {}) {
-  const k = [key, action, i, opt.prop ? 'p' : '', opt.tag || ''].join('|');
-  if (!cache.has(k)) {
-    let rows = layers(person, action, i, opt.prop);
-    if (action === 'walk-down' && i === 0) rows = standLegs(rows);
-    if (opt.edit) rows = opt.edit(rows.slice(), action);
-    cache.set(k, (window.PEOPLE_HD || pix)(rows, palOf(person, opt.pal), !opt.tag));
-  }
-  return cache.get(k);
-}
 function rng(seed) { let s = (seed * 2654435761) >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
-const crewOf = seed => PP.create('隊員' + seed);
-const guySrc = (seed, action = 'walk-down', i = 0) => look('g' + seed, crewOf(seed), action, i);
-// 舉牌：全身用站立圖（兩腳並排），擦掉垂下的左手，接上原本舉手圖的那隻手臂（prop 層），不用坐姿那組的上半身
-function standArm(person, step, both) {
-  // step 為 0／1：原地踏步的兩格（走路圖），沒給就是兩腳並排站好
-  const base = step === undefined ? standLegs(layers(person, 'walk-down', 0)) : layers(person, 'walk-down', step);
-  const rows = base.map(r => [...r]);
-  if (rows[16][1] === '.') rows[16][2] = '.';
-  for (let y = 12; y <= 15; y++) { rows[y][2] = '.'; rows[y][3] = 'K'; rows[y][4] = rows[y][5] === 'K' ? 'C' : rows[y][5]; }
-  const arm = PS.parts.prop.action.raise[0];
-  for (let y = 0; y < 20; y++) for (let x = 0; x < 16; x++) if (arm[y][x] !== '.') rows[y][x] = arm[y][x];
-  rows[11][0] = '.'; rows[11][1] = 'K'; rows[11][2] = 'C'; rows[11][3] = 'K';
-  rows[12][1] = 'K'; rows[12][2] = 'K'; rows[12][3] = 'K';
-  if (both) {
-    // 舉雙手：右邊也一樣，擦掉垂下的右手，接上鏡射的舉手手臂
-    if (rows[16][14] === '.') rows[16][13] = '.';
-    for (let y = 12; y <= 15; y++) { rows[y][13] = '.'; rows[y][12] = 'K'; rows[y][11] = rows[y][10] === 'K' ? 'C' : rows[y][10]; }
-    for (let y = 0; y < 20; y++) for (let x = 0; x < 16; x++) if (arm[y][x] !== '.') rows[y][15 - x] = arm[y][x];
-    rows[11][15] = '.'; rows[11][14] = 'K'; rows[11][13] = 'C'; rows[11][12] = 'K';
-    rows[12][14] = 'K'; rows[12][13] = 'K'; rows[12][12] = 'K';
-  }
-  return rows.map(r => r.join(''));
-}
-// 每個人隨機舉單手或舉雙手（由座號決定，同一人不會中途換）
+const crew = new Map(), crewOf = seed => { if (!crew.has(seed)) crew.set(seed, PP.person('隊員' + seed)); return crew.get(seed); };
+// 每個人隨機用單手或雙手舉牌（由座號決定，同一人不會中途換）
 const bothOf = seed => rng(seed * 7 + 3)() < 0.5;
-const handCache = new Map();
-const handSrc = (seed, step) => { const k = seed + '|' + step; if (!handCache.has(k)) { const p = crewOf(seed); handCache.set(k, (window.PEOPLE_HD || pix)(standArm(p, step, bothOf(seed)), palOf(p), true)); } return handCache.get(k); };
-// 隊伍原地踏步：人換走路的兩格，牌子不動；相鄰的人左右腳錯開
+const handsOf = seed => bothOf(seed) ? 2 : 1;
+// 舉牌的隊員；step 為 0／1 是原地踏步的兩格，沒給就是兩腳並排站好
+const handSrc = (seed, step) => PP.url(crewOf(seed), step === undefined ? { pose: 'hold', hands: handsOf(seed) } : { pose: 'hold', hands: handsOf(seed), step });
+// 隊伍原地踏步：人換踏步的兩格，牌子不動；相鄰的人左右腳錯開
 let stepTick = 0;
 setInterval(() => {
   stepTick ^= 1;
   document.querySelectorAll('#line .guy.idle:not(.laugh) img').forEach((im, k) => { const g = im.closest('.guy'); if (!g.classList.contains('gone')) im.src = handSrc(Number(g.dataset.seed), (stepTick + k) % 2); });
 }, 260);
-const setRow = (rows, y, x, s) => { rows[y] = rows[y].slice(0, x) + s + rows[y].slice(x + s.length); };
-// 間諜：黑帽、墨鏡、風衣
-const SPY_P = { ...PP.create('間諜'), hair: 'crop', accessory: 'none', top: 'blazer', bottom: 'trousers' };
-const SPY_PAL = { C: '#b0844a', c: '#6e4f28', Q: '#d9b26a', P: '#2b2440', p: '#1d1b2e', f: '#2b2440', R: '#c94a3a', g: '#1d1b2e' };
-function spyEdit(rows) {
-  ['....KKKKKKKK....', '...KffffffffK...', '...KRRRRRRRRK...', '.KKKffffffffKKK.'].forEach((h, y) => { rows[y] = h; });
-  rows[6] = rows[6].replace(/[IL]/g, 'g');
-  return rows;
-}
-// 間諜表情：被抓走＝眼睛瞪大、張嘴尖叫、冒冷汗；沒被抓到＝瞇眼、露牙得意笑
-const SPY_FACE = {
-  scared: rows => {
-    setRow(rows, 5, 12, 'L'); setRow(rows, 6, 12, 'L'); setRow(rows, 7, 12, 'L');
-    setRow(rows, 6, 4, 'IK'); setRow(rows, 6, 10, 'KI'); setRow(rows, 7, 4, 'IK'); setRow(rows, 7, 10, 'KI');
-    setRow(rows, 8, 6, 'KKKK'); setRow(rows, 9, 6, 'KRRK'); setRow(rows, 10, 6, 'KRRK'); setRow(rows, 11, 6, 'KRRK'); setRow(rows, 12, 6, 'KKKK');
-    return rows;
-  },
-  smug: rows => {
-    setRow(rows, 6, 4, 'KK'); setRow(rows, 6, 10, 'KK');
-    setRow(rows, 8, 5, 'KIIIIK'); setRow(rows, 9, 6, 'KKKK');
-    return rows;
-  },
-};
-const spyLook = (action, i = 0, face) => look('spy', SPY_P, action, i, { edit: face ? rows => SPY_FACE[face](spyEdit(rows)) : spyEdit, pal: SPY_PAL, tag: face || '' });
-// 警察：藍色制服、藍帽子、帽徽
-const COP_P = { ...PP.create('警察'), body: 'male', hair: 'crop', accessory: 'cap', top: 'blazer', bottom: 'trousers' };
-const COP_PAL = { C: '#2f56a8', c: '#1f3a78', Q: '#cfe0ff', P: '#1f3a78', p: '#16285a' };
-const copEdit = (rows, action) => { if (action !== 'walk-up') setRow(rows, 2, 7, 'YY'); return rows; };
-const copLook = (action, i = 0) => look('cop', COP_P, action, i, { edit: copEdit, pal: COP_PAL });
-// 飛踢高手：辦公室的老闆（戴皇冠那位）
-const BOSS = PP.boss();
-const kickEdit = rows => { rows[17] = '...KPPPPPPPPPPK.'; rows[18] = '...KPPK...KKKKKK'; rows[19] = '...KKK..........'; return rows; };
+// 間諜：黑帽、墨鏡、風衣。現出原形時還舉著原本那塊牌子（幾隻手舉跟原來那個人一樣）
+// 表情：scared＝被抓到，墨鏡掉了、眼睛瞪大、冒冷汗；smug＝沒被抓到，露牙得意笑
+const SPY = PP.spy(), COP = PP.cop(), BOSS = PP.boss();
+const spySrc = (el, face, step) => { const o = { pose: 'hold', hands: handsOf(Number(el.dataset.seed)), face }; if (step !== undefined) o.step = step; return PP.url(SPY, o); };
 const SPR = {
-  spy: spyLook('walk-down'),
-  spyWalk: [0, 1].map(i => spyLook('walk-down', i)),
-  spyScared: spyLook('walk-down', 0, 'scared'),
-  spyScaredWalk: [0, 1].map(i => spyLook('walk-down', i, 'scared')),
-  spySmug: spyLook('walk-down', 0, 'smug'),
-  cop: copLook('walk-down', 0),
-  copWalk: { L: [0, 1].map(i => copLook('walk-left', i)), R: [0, 1].map(i => copLook('walk-right', i)), D: [0, 1].map(i => copLook('walk-down', i)) },
-  kickWalk: { R: [0, 1].map(i => look('boss', BOSS, 'walk-right', i)), L: [0, 1].map(i => look('boss', BOSS, 'walk-left', i)) },
-  kick: {
-    R: look('boss', BOSS, 'walk-right', 0, { edit: kickEdit, tag: 'kick' }),
-    L: look('boss', BOSS, 'walk-left', 0, { edit: rows => kickEdit(rows).map(r => [...r].reverse().join('')).map((r, y) => y >= 17 ? r : layers(BOSS, 'walk-left', 0)[y]), tag: 'kick' }),
-  },
-  kickYay: [0, 1].map(i => look('boss', BOSS, 'walk-down', i)),
-  kickThink: look('boss', BOSS, 'walk-down', 0),
-  happy: look('boss', BOSS, 'walk-down', 0),
-  sad: look('boss', BOSS, 'walk-down', 0, { tag: 'sad', edit: rows => { [...rows[6]].forEach((ch, x) => { if (ch === 'I') setRow(rows, 7, x, 'L'); if (ch === 'I') setRow(rows, 8, x, 'L'); }); return rows; } }),
+  spy: PP.url(SPY),
+  // 警察：藍色制服、警帽
+  cop: PP.url(COP),
+  copWalk: { L: [0, 1].map(step => PP.url(COP, { pose: 'left', step })), R: [0, 1].map(step => PP.url(COP, { pose: 'right', step })), D: [0, 1].map(step => PP.url(COP, { pose: 'step', step })) },
+  // 飛踢高手：戴皇冠的隊長
+  kickWalk: { R: [0, 1].map(step => PP.url(BOSS, { pose: 'right', step })), L: [0, 1].map(step => PP.url(BOSS, { pose: 'left', step })) },
+  kick: { R: PP.url(BOSS, { pose: 'kick', dir: 'right' }), L: PP.url(BOSS, { pose: 'kick', dir: 'left' }) },
+  kickYay: [0, 1].map(step => PP.url(BOSS, { pose: 'cheer', face: 'happy', step })),
+  kickThink: PP.url(BOSS),
+  happy: PP.url(BOSS, { pose: 'cheer', face: 'happy' }),
+  sad: PP.url(BOSS, { face: 'sad' }),
 };
 const IMG = {
   sad: SPR.sad, happy: SPR.happy,
@@ -276,7 +195,7 @@ function lift(el) {
   stage.append(g); el.classList.add('gone');
   return g;
 }
-const toSpy = g => { g.querySelector('img').src = SPR.spyScared; g.querySelector('.sign').classList.add('bad'); };
+const toSpy = g => { g.querySelector('img').src = spySrc(g, 'scared'); g.querySelector('.sign').classList.add('bad'); };
 function putBack(el, g) { g?.remove(); el.classList.remove('gone'); el.classList.add('dizzy'); setTimeout(() => el.classList.remove('dizzy'), T(1300)); }
 async function flyOff(g, dir = 1) {
   await mv(g, [at(0, 0, 'rotate(0)'), { ...at(dir * 160, -260, `rotate(${dir * 540}deg)`), offset: .55 }, { ...at(dir * 440, -200, `rotate(${dir * 1080}deg) scale(.3)`), opacity: 0 }], 1100, 'cubic-bezier(.2,.7,.4,1)');
@@ -324,7 +243,7 @@ const METHODS = [
     if (hit) { const g = lift(el); toSpy(g); say(t.cx, t.y - 17 * p, '哇啊啊——！'); await flyOff(g, -1); }
     else { el.classList.add('soot', 'dizzy'); say(t.cx, t.y - 17 * p, '咳咳…我是好人啦！'); await wait(1400); el.classList.remove('soot', 'dizzy'); }
   } },
-  { key: 'kick', name: '飛踢高手', icon: SPR.kick, async run(el, hit) {
+  { key: 'kick', name: '飛踢高手', icon: SPR.kick.R, async run(el, hit) {
     const p = PX(), t = imgBox(el), W = stage.clientWidth;
     el.classList.remove('locked');
     // 目標太靠左就從右邊跑進來（整個人左右翻轉）
@@ -360,7 +279,7 @@ const METHODS = [
     if (hit) {
       const g = lift(el); toSpy(g); g.style.zIndex = 12;
       say(t.cx, t.y - 17 * p, '被抓到了…', 900); await wait(700);
-      const gi = g.querySelector('img'), stopG = loop(gi, SPR.spyScaredWalk, 150); stopW = loop(cop, SPR.copWalk.D, 150);
+      const gi = g.querySelector('img'), stopG = loop(gi, [0, 1].map(i => spySrc(g, 'scared', i)), 150); stopW = loop(cop, SPR.copWalk.D, 150);
       const dx = ox - t.x, dy = oy - t.y;
       await Promise.all([
         mv(g, [at(0, 0), { ...at(dx, dy), opacity: 1, offset: .85 }, { ...at(dx, dy + 8 * p, 'scale(.8)'), opacity: 0 }], 1000),
@@ -782,7 +701,7 @@ async function dodge(el) {
   SFX.whistle();
   const fly = mv(m, [at(sx - w / 2, sy - h / 2, `rotate(${ang}deg)`), at(t.cx - w / 2, ty - h / 2, `rotate(${ang}deg)`)], 750, 'cubic-bezier(.5,0,1,1)');
   await wait(470);
-  im.src = SPR.spySmug; el.style.zIndex = 5;
+  im.src = spySrc(el, 'smug'); el.style.zIndex = 5;
   const side = el.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${dir * 7 * p}px,${-9 * p}px)`, offset: .5 }, { transform: hop }], { duration: T(260), easing: 'ease-out', fill: 'forwards' });
   await fly; m.remove();
   SFX.boom(); boomAt(t.cx, ty - 4 * p, 20 * p); shake();
@@ -791,7 +710,7 @@ async function dodge(el) {
   await wait(1250);
   await el.animate([{ transform: hop }, { transform: `translate(${dir * 7 * p}px,${-6 * p}px)`, offset: .5 }, { transform: 'translate(0,0)' }], { duration: T(260), easing: 'ease-in' }).finished;
   side.cancel(); el.style.zIndex = '';
-  im.src = SPR.spyScared;
+  im.src = spySrc(el, 'scared');
   $('#mission').innerHTML = '再來一次！這次跑不掉了！';
   await wait(650);
 }
@@ -817,7 +736,7 @@ async function shoot(el) {
   } else {
     el.classList.add('idle');
     const spyEl = $(`#line .guy[data-i="${spyIdx}"]`);
-    spyEl.querySelector('img').src = SPR.spySmug; spyEl.querySelector('.sign').classList.add('bad');
+    spyEl.querySelector('img').src = spySrc(spyEl, 'smug'); spyEl.querySelector('.sign').classList.add('bad');
     spyEl.classList.add('laugh');
     spyEl.insertAdjacentHTML('beforeend', '<span class="spyTag">我才是間諜</span>');
     SFX.laugh();
@@ -846,7 +765,7 @@ async function pick(el) {
     SFX.win(); confetti(); cheer();
     finish(true, '');
   } else {
-    el.querySelector('img').src = SPR.spySmug; el.querySelector('.sign').classList.add('bad');
+    el.querySelector('img').src = spySrc(el, 'smug'); el.querySelector('.sign').classList.add('bad');
     el.classList.add('laugh');
     el.insertAdjacentHTML('beforeend', `<span class="spyTag">${ch === q.wrong ? '又是我！' : '我也是間諜'}</span>`);
     SFX.laugh();

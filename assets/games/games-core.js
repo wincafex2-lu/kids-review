@@ -42,53 +42,20 @@ const CANNON = HD.cannon || pixShaded(SPRITES.cannon, SPAL.cannon), FISH = HD.fi
 const ballEl = i => { const b = el('div', 'ball2'); if (HD.balls) { b.classList.add('pxball'); b.style.backgroundImage = `url(${HD.balls[i]})`; } else b.style.setProperty('--c', LANE[i]); return b; };
 const setBG = (scene, key) => { scene.style.backgroundImage = `url(${ART.BG[key]})`; };
 
-/* ---------- 點陣人物（Agent 辦公室，只用站姿） ---------- */
-const PP = window.OFFICE_PEOPLE, PS = window.PEOPLE_SPRITES;
-function layers(person, action, i) {
-  const rows = Array.from({ length: 20 }, () => Array(16).fill('.'));
-  const stack = [['body', person.body], ['bottom', person.bottom], [person.body === 'female' ? 'top-female' : 'top', person.top], ['hair', person.hair], ['accessory', person.accessory]];
-  for (const [layer, kind] of stack) { const px = PS.parts[layer][kind][action][i]; for (let y = 0; y < 20; y++) for (let x = 0; x < 16; x++) if (px[y][x] !== '.') rows[y][x] = px[y][x]; }
-  return rows.map(r => r.join(''));
-}
-// 站姿：走路圖第 0 格是步伐，把左腳鏡射到右腳變成兩腳並排
-const standLegs = rows => rows.map((r, y) => y < 17 ? r : r.slice(0, 9) + [...r.slice(4, 7)].reverse().join('') + r.slice(12));
-const setRow = (rows, y, x, s) => { rows[y] = rows[y].slice(0, x) + s + rows[y].slice(x + s.length); };
-// 舉雙手：擦掉垂下的手，接上「舉手」的手臂（只取手臂層），左右各一
-function armsUp(rows) {
-  rows = rows.map(r => [...r]);
-  const arm = PS.parts.prop.action.raise[0];
-  if (rows[16][1] === '.') rows[16][2] = '.';
-  for (let y = 12; y <= 15; y++) { rows[y][2] = '.'; rows[y][3] = 'K'; rows[y][4] = rows[y][5] === 'K' ? 'C' : rows[y][5]; }
-  for (let y = 0; y < 20; y++) for (let x = 0; x < 16; x++) if (arm[y][x] !== '.') rows[y][x] = arm[y][x];
-  rows[11][0] = '.'; rows[11][1] = 'K'; rows[11][2] = 'C'; rows[11][3] = 'K'; rows[12][1] = 'K'; rows[12][2] = 'K'; rows[12][3] = 'K';
-  if (rows[16][14] === '.') rows[16][13] = '.';
-  for (let y = 12; y <= 15; y++) { rows[y][13] = '.'; rows[y][12] = 'K'; rows[y][11] = rows[y][10] === 'K' ? 'C' : rows[y][10]; }
-  for (let y = 0; y < 20; y++) for (let x = 0; x < 16; x++) if (arm[y][x] !== '.') rows[y][15 - x] = arm[y][x];
-  rows[11][15] = '.'; rows[11][14] = 'K'; rows[11][13] = 'C'; rows[11][12] = 'K'; rows[12][14] = 'K'; rows[12][13] = 'K'; rows[12][12] = 'K';
-  return rows.map(r => r.join(''));
-}
-const FACE = {
-  happy: rows => { setRow(rows, 6, 4, 'KK'); setRow(rows, 6, 10, 'KK'); setRow(rows, 8, 5, 'KIIIIK'); setRow(rows, 9, 6, 'KKKK'); return rows; },
-  scared: rows => { setRow(rows, 5, 12, 'L'); setRow(rows, 6, 12, 'L'); setRow(rows, 6, 4, 'IK'); setRow(rows, 6, 10, 'KI'); setRow(rows, 7, 4, 'IK'); setRow(rows, 7, 10, 'KI'); setRow(rows, 9, 6, 'KKKK'); setRow(rows, 10, 6, 'KRRK'); setRow(rows, 11, 6, 'KKKK'); return rows; },
-  sad: rows => { setRow(rows, 7, 5, 'L'); setRow(rows, 8, 5, 'L'); setRow(rows, 7, 10, 'L'); setRow(rows, 8, 10, 'L'); setRow(rows, 9, 6, 'KKKK'); setRow(rows, 8, 6, 'K'); setRow(rows, 8, 9, 'K'); return rows; },
-};
-const SOOT = { S: '#4a4458', s: '#2e2a3a', I: '#4a4458' };
+/* ---------- 點陣人物（大頭點陣人物，畫法在 assets/people/chibi.js） ---------- */
+const PP = window.CHIBI;
+const SOOT = { soot: true };   // 被炸得一臉黑
 const pcache = new Map();
+// pose：stand 站、step 原地踏步、left／right 走路、cheer 歡呼；face：happy、scared、sad；pal 目前只有 SOOT
 function look(person, key, pose = 'stand', step = 0, face = '', pal) {
   const k = [key, pose, step, face, pal ? 'p' : ''].join('|');
-  if (!pcache.has(k)) {
-    let rows;
-    if (pose === 'right' || pose === 'left') rows = layers(person, 'walk-' + pose, step);
-    else { rows = step === 0 && pose !== 'step' ? standLegs(layers(person, 'walk-down', 0)) : layers(person, 'walk-down', step); if (pose === 'cheer') rows = armsUp(rows); }
-    if (face && FACE[face]) rows = FACE[face](rows.slice());
-    pcache.set(k, (window.PEOPLE_HD || pix)(rows, Object.assign({}, PP.frame(person, 'walk-down', 0).palette, { R: '#d6334a' }, pal), !face));
-  }
+  if (!pcache.has(k)) pcache.set(k, PP.url(person, { pose, step, face, soot: !!pal }));
   return pcache.get(k);
 }
 // 演員：腳底在 (x, y)，s = 每個像素幾 cqw
 class Actor {
   constructor(scene, name, x, y, s = .55, person) {
-    this.p = person || (name === '泓' ? PP.boss() : PP.create(name)); this.key = name; this.s = s;
+    this.p = person || PP.person(name); this.key = name; this.s = s;
     this.e = at(size(el('div', 'actor'), 16 * s, 20 * s), x, y); this.img = pimg(''); this.e.append(this.img); scene.append(this.e);
     this.x = x; this.y = y; this.pose = 'stand'; this.face = ''; this.pal = null; this.anim = false; this.f = 0; this.render();
     Actor.all.add(this);
@@ -819,7 +786,7 @@ const DOVE = { id: 'dove', name: '🕊️ 信鴿送信', how: '把寫著正確�
     const clouds = [10, 50, 90].map((x, i) => { const c = el('div', 'cloudpx'); c.style.backgroundImage = `url(${sp('cloud')})`; at(size(c, 16, 6), x, 14 + i * 4); scene.append(c); return c; });
     // 地面：左屋頂頂面 y=40.6（66px），陽台地板 y=41.25
     const kid = new Actor(scene, '你', 22, 40.8, .6); kid.p = { ...kid.p, accessory: 'cap' }; kid.key = '你cap'; kid.render();
-    const nana = new Actor(scene, '王奶奶', 90, 41.4, .6);
+    const nana = new Actor(scene, '王奶奶', 90, 40.4, .7);   // 站高一點、畫大一點，臉才不會被欄杆擋住（腳藏在欄杆下緣後面）
     scene.append(img(sp('railing'), 70, 34.4, 30, 7.5, 'railing'));
     // 鴿子停在鴿舍的洞口（停腳板 y=38.1）
     const DW = 7.2, DH = 5.85, home = [8.4 - DW / 2 + 1, 38.1 - DH];
